@@ -115,8 +115,8 @@ public class Cipher {
 	
 	public byte[] decryptChars(byte a, byte b) {
 		byte[] decrypted = new byte[2];
-		short combined = (short) (a >> 6 | b);
-		short combinedResult = decrypted[combined];
+		short combined = (short) (packedChars[a] << 6 | packedChars[b]);
+		short combinedResult = decryptArr[combined];
 		
 		decrypted[0] = (byte) (combinedResult << 6);
 		decrypted[1] = (byte) (combinedResult & 0x3F);
