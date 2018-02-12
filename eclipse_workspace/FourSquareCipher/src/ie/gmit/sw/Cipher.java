@@ -1,18 +1,18 @@
 package ie.gmit.sw;
 
 public class Cipher {
-	private short[][][] fourSq;
-	public byte[] packedChars;
-	public short[] unpackedChars;
-	private short[] encryptArr;
-	private short[] decryptArr;
-	private char[][] sqChars;
+	private final short[][][] fourSq;
+	public final byte[] packedChars;
+	public final short[] unpackedChars;
+	private final short[] encryptArr;
+	private final short[] decryptArr;
+	private final char[][] sqChars;
 	
 	public Cipher(String key) {
 		packedChars = new byte[256];
 		unpackedChars = new short[256];
 		
-		for (short s = 0; s < 128; ++s) {
+		for (short s = 0; s <= 127; ++s) {
 			packedChars[s] = packChar(s);
 		}
 		
@@ -25,7 +25,6 @@ public class Cipher {
 		
 		// populate top left / bottom right quadrants
 		fourSq = new short[3][8][8];
-		
 		sqChars = new char[16][16];
 		
 		short charCounter = 0;

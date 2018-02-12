@@ -84,7 +84,15 @@ public class Main {
 				for (int i = 0; i < bytesRead; ++i) {
 					b = inputBytes[i];
 					
-					packedByte = cipher.packedChars[b];
+					if (b < 0) {
+						// non ASCII character
+						packedByte = -1;
+					}
+					else {
+						// ASCII character
+						packedByte = cipher.packedChars[b];
+					}
+					
 					
 					if (packedByte != -1) {
 						// byte should be encrypted
@@ -134,17 +142,8 @@ public class Main {
 			
 			in.close();
 			
-			/*
-			System.out.println("Final bytes read: " + finalBytesRead);
-			for (int i = 0; i < outputBytes.length; ++i) {
-				System.out.printf("Byte %d: %d\n", i, outputBytes[i]);
-			}
-			*/
-			
 			out.write(outputBytes, 0, outputCounter);
 			if (charStored) {
-				System.out.println("First char: " + (char)cipher.unpackedChars[bigramA]);
-				
 				bigramB = cipher.packedChars[(short) ' '];
 				
 				if (encryptMode) {
@@ -155,7 +154,6 @@ public class Main {
 				}
 				
 				out.write(processedBytes[0]);
-				out.write(processedBytes[1]);
 				
 				if (carriedChars != null) {
 					for (int i = 0; i < carriedChars.size(); ++i) {
@@ -164,6 +162,8 @@ public class Main {
 					
 					carriedChars = null;
 				}
+				
+				out.write(processedBytes[1]);
 			}
 			
 			if (carriedChars != null) {
@@ -193,7 +193,7 @@ public class Main {
 		long start = System.nanoTime();
 		String fileName = "WarAndPeace-LeoTolstoy";
 		processFile(fileName, true);
-		// processFile(fileName, false);
+		processFile(fileName, false);
 		System.out.printf("Time taken: %.2fms.\n", (System.nanoTime() - start) / 1000000f);
 	}
 	
