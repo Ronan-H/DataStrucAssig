@@ -6,10 +6,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Main {
 	private static Cipher cipher;
-	private static final int BUFFER_LEN = 512;
+	private static final int BUFFER_LEN = 16384;
 	private static BufferedOutputStream out;
 	private static int outputCounter;
 	private static byte[] outputBytes;
@@ -29,7 +31,7 @@ public class Main {
 	}
 	
 
-	private static void writeBytes(byte[] processedBytes, ArrayList<Byte> carriedChars) throws IOException {
+	private static void writeBytes(byte[] processedBytes, List<Byte> carriedChars) throws IOException {
 		outputBytes[outputCounter++] = processedBytes[0];
 		
 		writeIfFull();
@@ -40,7 +42,6 @@ public class Main {
 		}
 		
 		outputBytes[outputCounter++] = processedBytes[1];
-		writeIfFull();
 	}
 	
 	private static void writeIfFull() throws IOException {
@@ -51,7 +52,7 @@ public class Main {
 		}
 	}
 	
-	public static void readFile(String fileName, boolean encryptMode) {
+	public static void processFile(String fileName, boolean encryptMode) {
 		try {
 			String inputPath = String.format("%s/%s%s.txt",
 				(encryptMode ? "input" : "output"),
@@ -67,7 +68,6 @@ public class Main {
 			
 			byte[] inputBytes = new byte[BUFFER_LEN];
 			int bytesRead;
-			int finalBytesRead = 0;
 			byte bigramA = 0, bigramB;
 			boolean charStored = false;
 			byte b;
@@ -75,14 +75,12 @@ public class Main {
 			byte[] processedBytes = new byte[2];
 			// intial size for the carriedChars ArrayList
 			final int CARRIED_CHARS_INITIAL_SIZE = 5;
-			ArrayList<Byte> carriedChars = null;
+			List<Byte> carriedChars = null;
 			
 			outputBytes = new byte[BUFFER_LEN];
 			outputCounter = 0;
 			
 			while ((bytesRead = in.read(inputBytes)) != -1) {
-				finalBytesRead = bytesRead;
-				
 				for (int i = 0; i < bytesRead; ++i) {
 					b = inputBytes[i];
 					
@@ -136,18 +134,18 @@ public class Main {
 			
 			in.close();
 			
-			
+			/*
 			System.out.println("Final bytes read: " + finalBytesRead);
 			for (int i = 0; i < outputBytes.length; ++i) {
 				System.out.printf("Byte %d: %d\n", i, outputBytes[i]);
 			}
+			*/
 			
-			
-			out.write(outputBytes, 0, finalBytesRead);
+			out.write(outputBytes, 0, outputCounter);
 			if (charStored) {
 				System.out.println("First char: " + (char)cipher.unpackedChars[bigramA]);
 				
-				bigramB = cipher.packedChars[(short) 'X'];
+				bigramB = cipher.packedChars[(short) ' '];
 				
 				if (encryptMode) {
 					processedBytes = cipher.encryptPackedChars(bigramA, bigramB);	
@@ -156,7 +154,8 @@ public class Main {
 					processedBytes = cipher.decryptPackedChars(bigramA, bigramB);
 				}
 				
-				out.write(cipher.unpackedChars[processedBytes[0]]);
+				out.write(processedBytes[0]);
+				out.write(processedBytes[1]);
 				
 				if (carriedChars != null) {
 					for (int i = 0; i < carriedChars.size(); ++i) {
@@ -165,8 +164,6 @@ public class Main {
 					
 					carriedChars = null;
 				}
-				
-				out.write(cipher.unpackedChars[processedBytes[1]]);
 			}
 			
 			if (carriedChars != null) {
@@ -194,8 +191,9 @@ public class Main {
 		*/
 		
 		long start = System.nanoTime();
-		readFile("CharTest", true);
-		readFile("CharTest", false);
+		String fileName = "WarAndPeace-LeoTolstoy";
+		processFile(fileName, true);
+		// processFile(fileName, false);
 		System.out.printf("Time taken: %.2fms.\n", (System.nanoTime() - start) / 1000000f);
 	}
 	

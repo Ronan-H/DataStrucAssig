@@ -82,8 +82,7 @@ public class Cipher {
 	
 	public byte[] encryptPackedChars(byte a, byte b) {
 		byte[] encrypted = new byte[2];
-		short combined = (short) (a << 6 | b);
-		short combinedResult = encryptArr[combined];
+		short combinedResult = encryptArr[(short) (a << 6 | b)];
 		
 		encrypted[0] = (byte) unpackedChars[combinedResult >> 6];
 		encrypted[1] = (byte) unpackedChars[combinedResult & 0x3F];
@@ -116,8 +115,7 @@ public class Cipher {
 	
 	public byte[] decryptPackedChars(byte a, byte b) {
 		byte[] decrypted = new byte[2];
-		short combined = (short) (a << 6 | b);
-		short combinedResult = decryptArr[combined];
+		short combinedResult = decryptArr[(short) (a << 6 | b)];
 		
 		decrypted[0] = (byte) unpackedChars[combinedResult >> 6];
 		decrypted[1] = (byte) unpackedChars[combinedResult & 0x3F];
