@@ -18,7 +18,6 @@ public class Cipher {
 		
 		for (short s = 0; s < 128; ++s) {
 			unpackedChars[s] = unpackChar(s);
-			//System.out.printf("%3d: %c\n", s, (char)unpackedChars[s]);
 		}
 		
 		encryptArr = new short[4096];
@@ -79,15 +78,6 @@ public class Cipher {
 		for (short i = 0; i < encryptArr.length; ++i) {
 			decryptArr[encryptArr[i]] = i;
 		}
-		
-		// Collision
-		// 1246
-		// 1388
-		
-		System.out.println("En test: " + encryptArr[(short) (packedChars['e'] << 6 | packedChars['p'])]);
-		System.out.println("En test: " + encryptArr[(short) (packedChars['u'] << 6 | packedChars['u'])]);
-		
-		// System.out.println("Test: " + encryptArr[2000]);
 	}
 	
 	public byte[] encryptPackedChars(byte a, byte b) {

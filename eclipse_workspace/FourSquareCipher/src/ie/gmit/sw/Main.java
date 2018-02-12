@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class Main {
 	private static Cipher cipher;
-	private static final int BUFFER_LEN = 8192;
+	private static final int BUFFER_LEN = 512;
 	private static BufferedOutputStream out;
 	private static int outputCounter;
 	private static byte[] outputBytes;
@@ -74,18 +74,16 @@ public class Main {
 			byte packedByte;
 			byte[] processedBytes = new byte[2];
 			// intial size for the carriedChars ArrayList
-			final int CARRIED_CHARS_SIZE = 5;
+			final int CARRIED_CHARS_INITIAL_SIZE = 5;
 			ArrayList<Byte> carriedChars = null;
 			
 			outputBytes = new byte[BUFFER_LEN];
 			outputCounter = 0;
 			
 			while ((bytesRead = in.read(inputBytes)) != -1) {
-				if (bytesRead != -1) {
-					finalBytesRead = bytesRead;
-				}
+				finalBytesRead = bytesRead;
 				
-				for (int i = 0; i < inputBytes.length; ++i) {
+				for (int i = 0; i < bytesRead; ++i) {
 					b = inputBytes[i];
 					
 					packedByte = cipher.packedChars[b];
@@ -122,7 +120,7 @@ public class Main {
 						if (charStored) {
 							if (carriedChars == null) {
 								// start a buffer of unsupported chars, to be written later
-								carriedChars = new ArrayList<Byte>(CARRIED_CHARS_SIZE);
+								carriedChars = new ArrayList<Byte>(CARRIED_CHARS_INITIAL_SIZE);
 							}
 							
 							carriedChars.add(b);
@@ -136,9 +134,19 @@ public class Main {
 				}
 			}
 			
-			out.write(outputBytes, 0, finalBytesRead);
+			in.close();
 			
+			
+			System.out.println("Final bytes read: " + finalBytesRead);
+			for (int i = 0; i < outputBytes.length; ++i) {
+				System.out.printf("Byte %d: %d\n", i, outputBytes[i]);
+			}
+			
+			
+			out.write(outputBytes, 0, finalBytesRead);
 			if (charStored) {
+				System.out.println("First char: " + (char)cipher.unpackedChars[bigramA]);
+				
 				bigramB = cipher.packedChars[(short) 'X'];
 				
 				if (encryptMode) {
@@ -167,7 +175,6 @@ public class Main {
 				}
 			}
 			
-			in.close();
 			out.close();
 		}catch(IOException e) {
 			e.printStackTrace();
@@ -180,13 +187,15 @@ public class Main {
 		
 		// cipher.printSquares();
 		
+		/*
 		byte[] enBytes = cipher.decryptChars((byte) 'T', (byte) '5');
 		char[] enChars = {(char)enBytes[0], (char)enBytes[1]};
 		System.out.println("Chars: " + enChars[0] + " " + enChars[1]);
+		*/
 		
 		long start = System.nanoTime();
-		readFile("WarAndPeace-LeoTolstoy", true);
-		readFile("WarAndPeace-LeoTolstoy", false);
+		readFile("CharTest", true);
+		readFile("CharTest", false);
 		System.out.printf("Time taken: %.2fms.\n", (System.nanoTime() - start) / 1000000f);
 	}
 	
