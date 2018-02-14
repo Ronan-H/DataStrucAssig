@@ -1,25 +1,36 @@
 package ie.gmit.sw;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 public class Cipher {
 	private final short[][][] fourSq;
-	public final byte[] packedChars;
-	public final short[] unpackedChars;
+	public static final byte[] PACKED_CHARS;
+	public static final short[] UNPACKED_CHARS;
 	private final short[] encryptArr;
 	private final short[] decryptArr;
 	private final char[][] sqChars;
 	
-	public Cipher(String key) {
-		packedChars = new byte[256];
-		unpackedChars = new short[256];
+	static {
+		PACKED_CHARS = new byte[256];
+		UNPACKED_CHARS = new short[256];
 		
 		for (short s = 0; s <= 127; ++s) {
-			packedChars[s] = packChar(s);
+			PACKED_CHARS[s] = packChar(s);
 		}
 		
 		for (short s = 0; s < 128; ++s) {
-			unpackedChars[s] = unpackChar(s);
+			UNPACKED_CHARS[s] = unpackChar(s);
 		}
-		
+	}
+	
+	public Cipher(String key) {
 		encryptArr = new short[4096];
 		decryptArr = new short[4096];
 		
@@ -32,7 +43,7 @@ public class Cipher {
 			for (int j = 0; j < 8; ++j) {
 				short compactVal = charCounter++;
 				fourSq[0][i][j] = (short)charCounter;
-				char charVal = (char)unpackedChars[compactVal];
+				char charVal = (char)UNPACKED_CHARS[compactVal];
 				
 				sqChars[i][j] = charVal;
 				sqChars[i + 8][j + 8] = charVal;
@@ -45,7 +56,7 @@ public class Cipher {
 			for (int j = 0; j < 8; ++j) {
 				for (int k = 0; k < 8; ++k) {
 					char keyChar = key.charAt(keyIndex++);
-					fourSq[i][j][k] = packedChars[(short) keyChar];
+					fourSq[i][j][k] = PACKED_CHARS[(short) keyChar];
 					
 					if (i == 1) {
 						sqChars[j][k + 8] = keyChar;
@@ -79,50 +90,29 @@ public class Cipher {
 		}
 	}
 	
-	public byte[] encryptPackedChars(byte a, byte b) {
-		byte[] encrypted = new byte[2];
-		short combinedResult = encryptArr[(short) (a << 6 | b)];
-		
-		encrypted[0] = (byte) unpackedChars[combinedResult >> 6];
-		encrypted[1] = (byte) unpackedChars[combinedResult & 0x3F];
-		
-		return encrypted;
-	}
+	
 	
 	public byte[] encryptChars(byte a, byte b) {
 		byte[] encrypted = new byte[2];
-		short combined = (short) (packedChars[a] << 6 | packedChars[b]);
-		System.out.println("Comb: " + combined);
-		short combinedResult = encryptArr[combined];
+		short combinedResult = encryptArr[(short) (a << 6 | b)];
 		
-		encrypted[0] = (byte) unpackedChars[(combinedResult >> 6)];
-		encrypted[1] = (byte) unpackedChars[(combinedResult & 0x3F)];
+		encrypted[0] = (byte) UNPACKED_CHARS[combinedResult >> 6];
+		encrypted[1] = (byte) UNPACKED_CHARS[combinedResult & 0x3F];
 		
 		return encrypted;
 	}
 	
 	public byte[] decryptChars(byte a, byte b) {
 		byte[] decrypted = new byte[2];
-		short combined = (short) (packedChars[a] << 6 | packedChars[b]);
-		short combinedResult = decryptArr[combined];
-		
-		decrypted[0] = (byte) (combinedResult << 6);
-		decrypted[1] = (byte) (combinedResult & 0x3F);
-		
-		return decrypted;
-	}
-	
-	public byte[] decryptPackedChars(byte a, byte b) {
-		byte[] decrypted = new byte[2];
 		short combinedResult = decryptArr[(short) (a << 6 | b)];
 		
-		decrypted[0] = (byte) unpackedChars[combinedResult >> 6];
-		decrypted[1] = (byte) unpackedChars[combinedResult & 0x3F];
+		decrypted[0] = (byte) UNPACKED_CHARS[combinedResult >> 6];
+		decrypted[1] = (byte) UNPACKED_CHARS[combinedResult & 0x3F];
 		
 		return decrypted;
 	}
 	
-	private byte packChar(short c) {
+	private static byte packChar(short c) {
 		int cVal = c;
 		
 		if (cVal >= 65 && cVal <= 90) {
@@ -141,7 +131,7 @@ public class Cipher {
 		return -1;
 	}
 	
-	private short unpackChar(short c) {
+	private static short unpackChar(short c) {
 		int cVal = c;
 		
 		if (cVal < 26) {
@@ -179,6 +169,207 @@ public class Cipher {
 		}
 		
 		System.out.println();
+	}
+	
+	public void processFile(String fileName, boolean encryptMode, boolean outputToFile) {
+		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, outputToFile);
+		cipherProcessor.processFile();
+	}
+	
+	private class CipherProcessor {
+		private String fileName;
+		private boolean encryptMode;
+		private boolean outputToFile;
+		
+		private static final int BUFFER_LEN = 16384;
+		private BufferedOutputStream out;
+		private int outputCounter;
+		private byte[] outputBytes;
+		
+		public CipherProcessor(String fileName, boolean encryptMode, boolean outputToFile) {
+			this.fileName = fileName;
+			this.encryptMode = encryptMode;
+			this.outputToFile = outputToFile;
+		}
+		
+		public void processFile() {
+			try {
+				boolean useHarddrive = false;
+				String harddriveDir = "G:/FourSquareCipher/";
+				
+				String inputPath = String.format("%s%s/%s%s.txt",
+					(useHarddrive ? harddriveDir : ""),
+					(encryptMode ? "input" : "output"),
+					fileName,
+					(encryptMode ? "" : "_enc"));
+				
+				String outputPath = String.format("%soutput/%s%s.txt",
+						(useHarddrive ? harddriveDir : ""),
+						fileName,
+						(encryptMode ? "_enc" : "_dec"));
+				
+				OutputStream outStream;
+				if (outputToFile) {
+					outStream = new FileOutputStream(outputPath);
+				}
+				else {
+					outStream = System.out;
+				}
+				
+				BufferedInputStream in = new BufferedInputStream(new FileInputStream(inputPath));
+				out = new BufferedOutputStream(outStream);
+				
+				byte[] inputBytes = new byte[BUFFER_LEN];
+				int bytesRead;
+				byte bigramA = 0, bigramB;
+				boolean charStored = false;
+				byte b;
+				byte packedByte;
+				byte[] processedBytes = new byte[2];
+				// initial size for the carriedChars ArrayList
+				final int CARRIED_CHARS_INITIAL_SIZE = 5;
+				List<Byte> carriedChars = null;
+				
+				outputBytes = new byte[BUFFER_LEN];
+				outputCounter = 0;
+				
+				while ((bytesRead = in.read(inputBytes)) != -1) {
+					for (int i = 0; i < bytesRead; ++i) {
+						b = inputBytes[i];
+						
+						if (b < 0) {
+							// non ASCII character
+							packedByte = -1;
+						}
+						else {
+							// ASCII character
+							packedByte = PACKED_CHARS[b];
+						}
+						
+						if (packedByte != -1) {
+							// byte should be encrypted
+							if (charStored) {
+								bigramB = packedByte;
+								
+								if (encryptMode) {
+									processedBytes = encryptChars(bigramA, bigramB);	
+								}
+								else {
+									processedBytes = decryptChars(bigramA, bigramB);
+								}
+								
+								if (carriedChars == null) {
+									writeBytes(processedBytes);
+								}
+								else {
+									writeBytes(processedBytes, carriedChars);
+									carriedChars = null;
+								}
+								
+								charStored = false;
+							}
+							else {
+								bigramA = packedByte;
+								charStored = true;
+							}
+						}
+						else {
+							// packedByte == -1
+							if (charStored) {
+								if (carriedChars == null) {
+									// start a buffer of unsupported chars, to be written later
+									carriedChars = new ArrayList<Byte>(CARRIED_CHARS_INITIAL_SIZE);
+								}
+								
+								carriedChars.add(b);
+							}
+							else {
+								outputBytes[outputCounter++] = b;
+							}
+						}
+						
+						writeIfFull();
+					}
+				}
+				
+				in.close();
+				
+				out.write(outputBytes, 0, outputCounter);
+				if (charStored) {
+					bigramB = PACKED_CHARS[(short) ' '];
+					
+					if (encryptMode) {
+						processedBytes = encryptChars(bigramA, bigramB);	
+					}
+					else {
+						processedBytes = decryptChars(bigramA, bigramB);
+					}
+					
+					out.write(processedBytes[0]);
+					
+					if (carriedChars != null) {
+						for (int i = 0; i < carriedChars.size(); ++i) {
+							out.write(carriedChars.get(i));
+						}
+						
+						carriedChars = null;
+					}
+					
+					out.write(processedBytes[1]);
+				}
+				
+				if (carriedChars != null) {
+					for (int i = 0; i < carriedChars.size(); ++i) {
+						out.write(carriedChars.get(i));
+					}
+				}
+				
+				if (outputToFile) {
+					out.close();
+				}
+				else {
+					System.out.print("\n\n");
+				}
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private void writeBytes(byte[] processedBytes) throws IOException {
+			if (outputCounter == BUFFER_LEN -1) {
+				outputBytes[outputCounter++] = processedBytes[0];
+				
+				writeIfFull();
+				
+				outputBytes[outputCounter++] = processedBytes[1];
+			}
+			else {
+				outputBytes[outputCounter++] = processedBytes[0];
+				outputBytes[outputCounter++] = processedBytes[1];
+			}
+		}
+		
+
+		private void writeBytes(byte[] processedBytes, List<Byte> carriedChars) throws IOException {
+			outputBytes[outputCounter++] = processedBytes[0];
+			
+			writeIfFull();
+			
+			for (int j = 0; j < carriedChars.size(); ++j) {
+				outputBytes[outputCounter++] = carriedChars.get(j);
+				writeIfFull();
+			}
+			
+			outputBytes[outputCounter++] = processedBytes[1];
+		}
+		
+		private void writeIfFull() throws IOException {
+			if (outputCounter == BUFFER_LEN) {
+				out.write(outputBytes);
+				outputBytes = new byte[BUFFER_LEN];
+				outputCounter = 0;
+			}
+		}
 	}
 	
 }
