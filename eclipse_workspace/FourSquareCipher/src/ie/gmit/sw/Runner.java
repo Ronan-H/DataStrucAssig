@@ -16,6 +16,11 @@ public class Runner {
 		int choice;
 		Random random;
 		char genChar;
+		String key = null;
+		int numKeys;
+		StringBuilder[] inputKeys = {null, null};
+		Cipher cipher;
+		boolean readFromFile;
 		
 		System.out.println();
 		System.out.println("==============================");
@@ -30,29 +35,34 @@ public class Runner {
 		switch (choice) {
 		case 1:
 			// randomly generate the key
-			random = new Random();
-			StringBuilder keyBuilder = new StringBuilder(64);
-			
-			for (i = 0; i < 64; ++i) {
-				// TODO Generate UNIQUE chars!!
-				genChar = (char)Cipher.UNPACKED_CHARS[random.nextInt(64)];
-				keyBuilder.append(genChar);
-			}
-			
-			System.out.println("Generated key: " + keyBuilder.toString());
-
+			key = Cipher.generateKey();
 			break;
 		case 2:
 			// get key by user input
+			System.out.println("Use one key or two?");
+			System.out.printf("\t(One key max length: %d%n", Cipher.ALPHABET_SIZE);
+			System.out.printf("\t Two keys max length each: %d%n", Cipher.ALPHABET_SIZE /2);
+			System.out.println("\t smaller keys will be automatically padded)");
 			
+			numKeys = getUserOption("I want one key", "I want to enter two keys");
+			
+			for (i = 0; i < numKeys; ++i) {
+				System.out.printf("\nPlease enter key %d:\n> ", (i + 1));
+				inputKeys[i] = new StringBuilder(console.nextLine());
+			}
+			
+			key = Cipher.sanitizeKeys(inputKeys);
+			System.out.printf("DEBUG: Key is %d chars long.%n", key.length());
 		}
 		
-		System.out.print("Enter an key to use in the cipher for encryption/decryption:\n> ");
+		System.out.printf("Key: %s\n", key);
+		System.out.println("Initializing cipher...");
+		cipher = new Cipher(key);
+		System.out.println("Finished initializing cipher.");
 		
+		System.out.println("Read input data from file or URL?");
+		choice = getUserOption("Read from file", "Read from URL");
 		
-		cipher = new Cipher("lps8H T4naht2FdGPBw5SYV,Nx0XfboOACyz1jMZKir6W9uQIqeJ7UgmELcD3Rkv"
-						  + "mgjFuYZ7BEIORpzGNxUTyn0rSWJ Xfv,PesKQV96L5tihCloc3w8A2HqD1ka4dbM");
-
 		long start = System.nanoTime();
 		String fileName = "WarAndPeace-LeoTolstoy";
 		// processFile(fileName, true); // encrypt

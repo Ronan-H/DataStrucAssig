@@ -7,9 +7,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 public class Cipher {
+	public static final int ALPHABET_SIZE = 64;
+	public static final int SQUARED_ALPHABET_SIZE = (int)Math.pow(ALPHABET_SIZE, 2);
+	public static final int SQRT_ALPHABET_SIZE = (int)Math.sqrt(ALPHABET_SIZE);
+	
 	private final short[][][] fourSq;
 	public static final byte[] PACKED_CHARS;
 	public static final short[] UNPACKED_CHARS;
@@ -31,38 +37,39 @@ public class Cipher {
 	}
 	
 	public Cipher(String key) {
-		encryptArr = new short[4096];
-		decryptArr = new short[4096];
+		encryptArr = new short[SQUARED_ALPHABET_SIZE];
+		decryptArr = new short[SQUARED_ALPHABET_SIZE];
 		
 		// populate top left / bottom right quadrants
-		fourSq = new short[3][8][8];
-		sqChars = new char[16][16];
+		fourSq = new short[3][SQRT_ALPHABET_SIZE][SQRT_ALPHABET_SIZE];
+		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
+		sqChars = new char[fullSqSize][fullSqSize];
 		
 		short charCounter = 0;
-		for (int i = 0; i < 8; ++i) {
-			for (int j = 0; j < 8; ++j) {
+		for (int i = 0; i < SQRT_ALPHABET_SIZE; ++i) {
+			for (int j = 0; j < SQRT_ALPHABET_SIZE; ++j) {
 				short compactVal = charCounter++;
 				fourSq[0][i][j] = (short)charCounter;
 				char charVal = (char)UNPACKED_CHARS[compactVal];
 				
 				sqChars[i][j] = charVal;
-				sqChars[i + 8][j + 8] = charVal;
+				sqChars[i + SQRT_ALPHABET_SIZE][j + SQRT_ALPHABET_SIZE] = charVal;
 			}
 		}
 		
 		// populate top right / bottom left quadrants with the encryption key
 		int keyIndex = 0;
 		for (int i = 1; i <= 2; ++i) {
-			for (int j = 0; j < 8; ++j) {
-				for (int k = 0; k < 8; ++k) {
+			for (int j = 0; j < SQRT_ALPHABET_SIZE; ++j) {
+				for (int k = 0; k < SQRT_ALPHABET_SIZE; ++k) {
 					char keyChar = key.charAt(keyIndex++);
 					fourSq[i][j][k] = PACKED_CHARS[(short) keyChar];
 					
 					if (i == 1) {
-						sqChars[j][k + 8] = keyChar;
+						sqChars[j][k + SQRT_ALPHABET_SIZE] = keyChar;
 					}
 					else {
-						sqChars[j + 8][k] = keyChar;
+						sqChars[j + SQRT_ALPHABET_SIZE][k] = keyChar;
 					}
 				}
 			}
@@ -70,10 +77,10 @@ public class Cipher {
 		
 		int arrCounter = 0;
 		// generate the short arrays used for encryption/decryption
-		for (int c1y = 0; c1y < 8; ++c1y) {
-			for (int c1x = 0; c1x < 8; ++c1x) {
-				for (int c2y = 0; c2y < 8; ++c2y) {
-					for (int c2x = 0; c2x < 8; ++c2x) {
+		for (int c1y = 0; c1y < SQRT_ALPHABET_SIZE; ++c1y) {
+			for (int c1x = 0; c1x < SQRT_ALPHABET_SIZE; ++c1x) {
+				for (int c2y = 0; c2y < SQRT_ALPHABET_SIZE; ++c2y) {
+					for (int c2x = 0; c2x < SQRT_ALPHABET_SIZE; ++c2x) {
 						short toChar1 = fourSq[1][c1y][c2x];
 						short toChar2 = fourSq[2][c2y][c1x];
 						
@@ -90,7 +97,90 @@ public class Cipher {
 		}
 	}
 	
+	public static String generateKey() {
+		Random random = new Random();
+		char[] key = new char[ALPHABET_SIZE * 2];
+		int pos = 0;
+		int i;
+		short j;
+		
+		List<Character> charPool = new LinkedList<Character>();
+		
+		for (i = 0; i < 2; ++i) {
+			for (j = 0; j < ALPHABET_SIZE; ++j) {
+				charPool.add((char)unpackChar(j));
+			}
+			
+			while (!charPool.isEmpty()) {
+				key[pos++] = charPool.remove(random.nextInt(charPool.size()));
+			}
+		}
+		
+		return new String(key);
+	}
 	
+	/**
+	 * Adjusts a string of characters to work as a key for the cipher.
+	 * @param key
+	 * @return
+	 */
+	public static String sanitizeKeys(StringBuilder[] inputKeys) {
+		int i, j, k;
+		char c = 0;
+		int packedChar;
+		StringBuilder inputKey;
+		String outputKey;
+		
+		if (inputKeys[1] == null) inputKeys[1] = new StringBuilder(ALPHABET_SIZE);
+		
+		// Step 1: Remove any characters not in the cipher's alphabet
+		for (i = 0; i < 2; ++i) {
+			for (j = 0; j < inputKeys[i].length(); ++j) {
+				c = inputKeys[i].charAt(i);
+				packedChar = (c < 0 ? -1 : PACKED_CHARS[(int) c]);
+				
+				if (packedChar == -1) {
+					// unsupported character
+					inputKeys[i].deleteCharAt(j);
+					--j;
+				}
+			}
+		}
+		
+		// Step 2: Remove duplicate characters
+		for (i = 0; i < 2; ++i) {
+			inputKey = inputKeys[i];
+			for (j = 0; j < inputKey.length(); ++j) {
+				for (k = 0; k < inputKey.length(); ++k) {
+					if (k == j) continue;
+					
+					if (inputKey.charAt(k) == inputKey.charAt(j)) {
+						// duplicate character found
+						inputKey.deleteCharAt(k);
+						--k;
+					}
+				}
+			}
+		}
+		
+		// Step 3: Append characters, if necessary, to get the right key length
+		for (i = 0; i < 2; ++i) {
+			inputKey = inputKeys[i];
+			outerLoop:
+			for (j = 0; j < UNPACKED_CHARS.length && inputKey.length() < ALPHABET_SIZE; ++j) {
+				c = (char)UNPACKED_CHARS[j];
+				for (k = 0; k < inputKey.length(); ++k) {
+					if (inputKey.charAt(k) == c) continue outerLoop;
+				}
+				
+				// character not found; append it to the key
+				inputKey.append(c);
+			}
+		}
+		
+		outputKey = inputKeys[0].append(inputKeys[1]).toString();
+		return outputKey;
+	}
 	
 	public byte[] encryptChars(byte a, byte b) {
 		byte[] encrypted = new byte[2];
