@@ -119,69 +119,6 @@ public class Cipher {
 		return new String(key);
 	}
 	
-	/**
-	 * Adjusts a string of characters to work as a key for the cipher.
-	 * @param key
-	 * @return
-	 */
-	public static String sanitizeKeys(StringBuilder[] inputKeys) {
-		int i, j, k;
-		char c = 0;
-		int packedChar;
-		StringBuilder inputKey;
-		String outputKey;
-		
-		if (inputKeys[1] == null) inputKeys[1] = new StringBuilder(ALPHABET_SIZE);
-		
-		// Step 1: Remove any characters not in the cipher's alphabet
-		for (i = 0; i < 2; ++i) {
-			for (j = 0; j < inputKeys[i].length(); ++j) {
-				c = inputKeys[i].charAt(i);
-				packedChar = (c < 0 ? -1 : PACKED_CHARS[(int) c]);
-				
-				if (packedChar == -1) {
-					// unsupported character
-					inputKeys[i].deleteCharAt(j);
-					--j;
-				}
-			}
-		}
-		
-		// Step 2: Remove duplicate characters
-		for (i = 0; i < 2; ++i) {
-			inputKey = inputKeys[i];
-			for (j = 0; j < inputKey.length(); ++j) {
-				for (k = 0; k < inputKey.length(); ++k) {
-					if (k == j) continue;
-					
-					if (inputKey.charAt(k) == inputKey.charAt(j)) {
-						// duplicate character found
-						inputKey.deleteCharAt(k);
-						--k;
-					}
-				}
-			}
-		}
-		
-		// Step 3: Append characters, if necessary, to get the right key length
-		for (i = 0; i < 2; ++i) {
-			inputKey = inputKeys[i];
-			outerLoop:
-			for (j = 0; j < UNPACKED_CHARS.length && inputKey.length() < ALPHABET_SIZE; ++j) {
-				c = (char)UNPACKED_CHARS[j];
-				for (k = 0; k < inputKey.length(); ++k) {
-					if (inputKey.charAt(k) == c) continue outerLoop;
-				}
-				
-				// character not found; append it to the key
-				inputKey.append(c);
-			}
-		}
-		
-		outputKey = inputKeys[0].append(inputKeys[1]).toString();
-		return outputKey;
-	}
-	
 	public byte[] encryptChars(byte a, byte b) {
 		byte[] encrypted = new byte[2];
 		short combinedResult = encryptArr[(short) (a << 6 | b)];

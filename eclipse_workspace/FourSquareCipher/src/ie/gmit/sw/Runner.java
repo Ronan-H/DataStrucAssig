@@ -19,6 +19,7 @@ public class Runner {
 		String key = null;
 		int numKeys;
 		StringBuilder[] inputKeys = {null, null};
+		KeySanitizer keySanitizer;
 		Cipher cipher;
 		boolean readFromFile;
 		
@@ -51,7 +52,7 @@ public class Runner {
 				inputKeys[i] = new StringBuilder(console.nextLine());
 			}
 			
-			key = Cipher.sanitizeKeys(inputKeys);
+			key = new KeySanitizer(inputKeys).getSanitizedKey();
 			System.out.printf("DEBUG: Key is %d chars long.%n", key.length());
 		}
 		
@@ -64,9 +65,9 @@ public class Runner {
 		choice = getUserOption("Read from file", "Read from URL");
 		
 		long start = System.nanoTime();
-		String fileName = "WarAndPeace-LeoTolstoy";
-		// processFile(fileName, true); // encrypt
-		cipher.processFile(fileName, false, true); // decrypt
+		String fileName = "PoblachtNaHEireann";
+		cipher.processFile(fileName, true, true); // encrypt
+		// cipher.processFile(fileName, false, true); // decrypt
 		System.out.printf("Time taken: %.2fms.\n", (System.nanoTime() - start) / 1000000f);
 	}
 	
