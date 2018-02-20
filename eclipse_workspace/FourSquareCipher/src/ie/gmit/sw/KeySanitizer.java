@@ -33,6 +33,9 @@ public class KeySanitizer {
 	 * key(s) are.
 	 */
 	private void sanitizeKeys() {
+		// Step 1: Spill any additional chars from key 1 to key 2
+		equalizeKeys();
+		
 		// Step 1: Remove any characters not in the cipher's alphabet
 		removeUnsupportedChars();
 		
@@ -43,6 +46,13 @@ public class KeySanitizer {
 		addPadding();
 		
 		sanitizedKey = inputKeys[0].append(inputKeys[1]).toString();
+	}
+	
+	private void equalizeKeys() {
+		if (inputKeys[0].length() > ALPHABET_SIZE) {
+			inputKeys[1].append(inputKeys[0].substring(ALPHABET_SIZE));
+			inputKeys[1].delete(ALPHABET_SIZE, inputKeys[1].length());
+		}
 	}
 	
 	private void removeUnsupportedChars() {
@@ -108,6 +118,5 @@ public class KeySanitizer {
 			}
 		}
 	}
-	
 	
 }

@@ -2,10 +2,13 @@ package ie.gmit.sw;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -97,7 +100,7 @@ public class Cipher {
 		}
 	}
 	
-	public static String generateKey() {
+	public static String generateRandomKey() {
 		Random random = new Random();
 		char[] key = new char[ALPHABET_SIZE * 2];
 		int pos = 0;
@@ -198,52 +201,63 @@ public class Cipher {
 		System.out.println();
 	}
 	
-	public void processFile(String fileName, boolean encryptMode, boolean outputToFile) {
-		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, outputToFile);
+	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
+		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, readFromURL, writeToFile);
 		cipherProcessor.processFile();
 	}
 	
 	private class CipherProcessor {
-		private String fileName;
+		private String resourcePath;
 		private boolean encryptMode;
-		private boolean outputToFile;
+		private boolean writeToFile;
+		private boolean readFromURL;
 		
-		private static final int BUFFER_LEN = 16384;
+		private static final int BUFFER_LEN = 8192;
 		private BufferedOutputStream out;
 		private int outputCounter;
 		private byte[] outputBytes;
 		
-		public CipherProcessor(String fileName, boolean encryptMode, boolean outputToFile) {
-			this.fileName = fileName;
+		public CipherProcessor(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 			this.encryptMode = encryptMode;
-			this.outputToFile = outputToFile;
+			this.resourcePath = resourcePath;
+			this.writeToFile = writeToFile;
+			this.readFromURL = readFromURL;
 		}
 		
 		public void processFile() {
 			try {
-				boolean useHarddrive = false;
-				String harddriveDir = "G:/FourSquareCipher/";
+				String inputFileName = new File(resourcePath).getName();
+				String fileOutputPath;
 				
-				String inputPath = String.format("%s%s/%s%s.txt",
-					(useHarddrive ? harddriveDir : ""),
-					(encryptMode ? "input" : "output"),
-					fileName,
-					(encryptMode ? "" : "_enc"));
-				
-				String outputPath = String.format("%soutput/%s%s.txt",
-						(useHarddrive ? harddriveDir : ""),
-						fileName,
-						(encryptMode ? "_enc" : "_dec"));
-				
+				InputStream inStream;
 				OutputStream outStream;
-				if (outputToFile) {
-					outStream = new FileOutputStream(outputPath);
+				URL url;
+				
+				if (readFromURL) {
+					url = new URL(resourcePath);
+					inStream = url.openStream();
+				}
+				else {
+					inStream = new FileInputStream(resourcePath);
+				}
+				
+				if (writeToFile) {
+					// strip off the file extension, if there is one
+					if (inputFileName.contains(".")) {
+						inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
+					}
+					
+					fileOutputPath = String.format("output/%s%s.txt",
+							inputFileName,
+							(encryptMode ? "_enc" : "_dec"));
+					
+					outStream = new FileOutputStream(fileOutputPath);
 				}
 				else {
 					outStream = System.out;
 				}
 				
-				BufferedInputStream in = new BufferedInputStream(new FileInputStream(inputPath));
+				BufferedInputStream in = new BufferedInputStream(inStream);
 				out = new BufferedOutputStream(outStream);
 				
 				byte[] inputBytes = new byte[BUFFER_LEN];
@@ -351,7 +365,7 @@ public class Cipher {
 					}
 				}
 				
-				if (outputToFile) {
+				if (writeToFile) {
 					out.close();
 				}
 				else {
