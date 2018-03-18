@@ -15,22 +15,42 @@ import java.util.List;
 import java.util.Random;
 
 public class Cipher {
+	// number of characters which can be encrypted,
+	// i.e. number of characters in 1 quadrant of the four squares
 	public static final int ALPHABET_SIZE = 64;
 	public static final int SQUARED_ALPHABET_SIZE = (int)Math.pow(ALPHABET_SIZE, 2);
 	public static final int SQRT_ALPHABET_SIZE = (int)Math.sqrt(ALPHABET_SIZE);
 	
-	private final short[][][] fourSq;
+	// 3d array (3x 2 dim), containing the characters in the four squares,
+	// in "packed" form.
+	private final byte[][][] fourSq;
+	// a lookup table to convert a java char to a "packed" char:
+	// a packed char is 6 bits, with 0 being A, B being 1, all the
+	// way up to 63 -> ','
 	public static final byte[] PACKED_CHARS;
+	// the reverse of the above (converts packed char back to java char)
 	public static final short[] UNPACKED_CHARS;
+	// Another lookup table for encryption. Usage explained in the README.txt
 	private final short[] encryptArr;
+	// the reverse of the above
 	private final short[] decryptArr;
+	// same as fourSq, but instead represented as java chars
 	private final char[][] sqChars;
 	
+	/**
+	 * Running time: O(1)
+	 * Reasoning: Despite the 2 loops, there is no "input" as such, and they
+	 * will always run from 0 to 127. As such, this will always run in the same
+	 * amount of time (approx.).
+	 * 
+	 * Space complexity: ~768 bytes
+	 * Reasoning: 256 bytes + 2*256 bytes (2 bytes per short)
+	 */
 	static {
 		PACKED_CHARS = new byte[256];
 		UNPACKED_CHARS = new short[256];
 		
-		for (short s = 0; s <= 127; ++s) {
+		for (short s = 0; s < 128; ++s) {
 			PACKED_CHARS[s] = packChar(s);
 		}
 		
@@ -44,15 +64,15 @@ public class Cipher {
 		decryptArr = new short[SQUARED_ALPHABET_SIZE];
 		
 		// populate top left / bottom right quadrants
-		fourSq = new short[3][SQRT_ALPHABET_SIZE][SQRT_ALPHABET_SIZE];
+		fourSq = new byte[3][SQRT_ALPHABET_SIZE][SQRT_ALPHABET_SIZE];
 		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
 		sqChars = new char[fullSqSize][fullSqSize];
 		
-		short charCounter = 0;
+		byte charCounter = 0;
 		for (int i = 0; i < SQRT_ALPHABET_SIZE; ++i) {
 			for (int j = 0; j < SQRT_ALPHABET_SIZE; ++j) {
-				short compactVal = charCounter++;
-				fourSq[0][i][j] = (short)charCounter;
+				byte compactVal = charCounter++;
+				fourSq[0][i][j] = charCounter;
 				char charVal = (char)UNPACKED_CHARS[compactVal];
 				
 				sqChars[i][j] = charVal;
@@ -66,7 +86,7 @@ public class Cipher {
 			for (int j = 0; j < SQRT_ALPHABET_SIZE; ++j) {
 				for (int k = 0; k < SQRT_ALPHABET_SIZE; ++k) {
 					char keyChar = key.charAt(keyIndex++);
-					fourSq[i][j][k] = PACKED_CHARS[(short) keyChar];
+					fourSq[i][j][k] = PACKED_CHARS[(byte) keyChar];
 					
 					if (i == 1) {
 						sqChars[j][k + SQRT_ALPHABET_SIZE] = keyChar;
@@ -95,9 +115,13 @@ public class Cipher {
 			}
 		}
 		
+		// decryption array is just the reverse of the encryption array
+		// (indexes swapped with values at that index)
 		for (short i = 0; i < encryptArr.length; ++i) {
 			decryptArr[encryptArr[i]] = i;
 		}
+		
+		warmup();
 	}
 	
 	public static String generateRandomKey() {
@@ -192,7 +216,7 @@ public class Cipher {
 			
 			if (r == sqChars.length / 2 - 1) {
 				for (int i = 0; i < sqChars[r].length + 1; ++i) {
-					System.out.print("- ");
+					System.out.print(" -");
 				}
 				System.out.println();
 			}
@@ -204,6 +228,23 @@ public class Cipher {
 	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, readFromURL, writeToFile);
 		cipherProcessor.processFile();
+	}
+	
+	public void warmup() {
+		/*
+		byte[] b;
+		for (int n = 0; n < 10000; ++n) {
+			for (int i = 0; i < PACKED_CHARS.length; ++i) {
+				for (int j = 0; j < PACKED_CHARS.length; ++j) {
+					try {
+						b = encryptChars(PACKED_CHARS[i], PACKED_CHARS[j]);
+						b = decryptChars(PACKED_CHARS[i], PACKED_CHARS[j]);
+					}catch(Exception e) {}
+				}
+			}
+		}*/
+		
+		
 	}
 	
 	private class CipherProcessor {
@@ -247,7 +288,7 @@ public class Cipher {
 						inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
 					}
 					
-					fileOutputPath = String.format("output/%s%s.txt",
+					fileOutputPath = String.format("./output/%s%s.txt",
 							inputFileName,
 							(encryptMode ? "_enc" : "_dec"));
 					

@@ -55,7 +55,7 @@ public class Menu {
 		
 		while (running) {
 			out.println("What would you like to do?");
-			choice = getUserOption("Encrypt", "Decrypt", "Change the key", "Exit");
+			choice = getUserOption("Encrypt", "Decrypt", "Change the key", "Print the cipher's four squares", "Exit");
 			
 			switch (choice) {
 			case 1:
@@ -86,15 +86,16 @@ public class Menu {
 					// read from file
 					if (encryptMode) {
 						fileChooser.setSelectedFile(new File(defaultInputFile));
-						startingDir = "input/";
+						startingDir = "./input/";
 					}
 					else {
 						// Decrypt mode
 						fileChooser.setSelectedFile(null);
-						startingDir = "output/";
+						startingDir = "./output/";
 					}
 					
 					fileChooser.setCurrentDirectory(new File(startingDir));
+					fileChooser.grabFocus();
 					fileChooseResult = fileChooser.showOpenDialog(null);
 					
 					if (fileChooseResult != JFileChooser.APPROVE_OPTION) {
@@ -118,6 +119,10 @@ public class Menu {
 				cipher = initCipher();
 				break;
 			case 4:
+				// Print the cipher's four squares
+				cipher.printSquares();
+				break;
+			case 5:
 				// Exit
 				System.exit(0);
 			}
