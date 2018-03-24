@@ -236,8 +236,10 @@ public class Cipher {
 		
 		private static final int BUFFER_LEN = 8192;
 		private BufferedOutputStream out;
+		private AsyncResourceWriter arw;
 		private int outputCounter;
 		private byte[] outputBytes;
+		private byte[][] outputBytesContainer;
 		
 		public CipherProcessor(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 			this.encryptMode = encryptMode;
@@ -280,9 +282,14 @@ public class Cipher {
 				}
 				
 				BufferedInputStream in = new BufferedInputStream(inStream);
+				AsyncResourceReader arr = new AsyncResourceReader(in);
+				new Thread(arr).start();
 				out = new BufferedOutputStream(outStream);
+				arw = new AsyncResourceWriter(out);
+				new Thread(arw).start();
 				
 				byte[] inputBytes = new byte[BUFFER_LEN];
+				byte[][] inputBytesContainer = {inputBytes};
 				int bytesRead;
 				byte bigramA = 0, bigramB;
 				boolean charStored = false;
@@ -294,9 +301,10 @@ public class Cipher {
 				List<Byte> carriedChars = null;
 				
 				outputBytes = new byte[BUFFER_LEN];
+				outputBytesContainer = new byte[][] {outputBytes};
 				outputCounter = 0;
 				
-				while ((bytesRead = in.read(inputBytes)) != -1) {
+				while ((bytesRead = arr.getNextBytes(inputBytesContainer)) != -1) {
 					for (int i = 0; i < bytesRead; ++i) {
 						b = inputBytes[i];
 						
@@ -429,11 +437,121 @@ public class Cipher {
 		
 		private void writeIfFull() throws IOException {
 			if (outputCounter == BUFFER_LEN) {
-				out.write(outputBytes);
-				outputBytes = new byte[BUFFER_LEN];
+				arw.writeBytes(outputBytesContainer);
 				outputCounter = 0;
 			}
 		}
+		
+		private class AsyncResourceReader implements Runnable {
+			private BufferedInputStream in;
+			private byte[] inputBytes1, inputBytes2;
+			private int numBytesRead;
+			private boolean bytesReady;
+			private boolean usingBuffer1;
+			
+			public AsyncResourceReader(BufferedInputStream in) {
+				this.in = in;
+				inputBytes1 = new byte[BUFFER_LEN];
+				inputBytes2 = new byte[BUFFER_LEN];
+				
+				usingBuffer1 = true;
+				setBytesReady(false);
+			}
+			
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						numBytesRead = in.read(inputBytes1);
+						setBytesReady(true);
+						if (numBytesRead == -1) break;
+						while (bytesReady()) {}
+						
+						numBytesRead = in.read(inputBytes2);
+						setBytesReady(true);
+						if (numBytesRead == -1) break;
+						while (bytesReady()) {}
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			public int getNextBytes(byte[][] bytes) {
+				while (!bytesReady()) {}
+				
+				if (usingBuffer1) {
+					bytes[0] = inputBytes1;
+				}
+				else {
+					bytes[0] = inputBytes2;
+				}
+				
+				usingBuffer1 = !usingBuffer1;
+				setBytesReady(false);
+				
+				return numBytesRead;
+			}
+			
+			public boolean bytesReady() {
+				synchronized (this) {
+					return bytesReady;
+				}
+			}
+			
+			public void setBytesReady(boolean state) {
+				synchronized (this) {
+					bytesReady = state;
+				}
+			}
+			
+		}
+		
+		private class AsyncResourceWriter implements Runnable {
+			private BufferedOutputStream out;
+			private byte[] outputBytes;
+			private boolean waiting;
+			
+			public AsyncResourceWriter(BufferedOutputStream out) {
+				this.out = out;
+				
+				setWaiting(true);
+			}
+			
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						while (waiting()) {}
+						out.write(outputBytes);
+						setWaiting(true);
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			public void writeBytes(byte[][] bytes) {
+				while (!waiting()) {}
+				
+				outputBytes = bytes[0];
+				setWaiting(false);
+			}
+			
+			public boolean waiting() {
+				synchronized (this) {
+					return waiting;
+				}
+			}
+			
+			public void setWaiting(boolean state) {
+				synchronized (this) {
+					waiting = state;
+				}
+			}
+			
+		}
+		
 	}
 	
 }
