@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -239,7 +240,6 @@ public class Cipher {
 		private AsyncResourceWriter arw;
 		private int outputCounter;
 		private byte[] outputBytes;
-		private byte[][] outputBytesContainer;
 		
 		public CipherProcessor(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 			this.encryptMode = encryptMode;
@@ -271,7 +271,8 @@ public class Cipher {
 						inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
 					}
 					
-					fileOutputPath = String.format("./output/%s%s.txt",
+					fileOutputPath = String.format("%s/output/%s%s.txt",
+							Menu.ROOT_DIR,
 							inputFileName,
 							(encryptMode ? "_enc" : "_dec"));
 					
@@ -283,13 +284,12 @@ public class Cipher {
 				
 				BufferedInputStream in = new BufferedInputStream(inStream);
 				AsyncResourceReader arr = new AsyncResourceReader(in);
-				new Thread(arr).start();
 				out = new BufferedOutputStream(outStream);
 				arw = new AsyncResourceWriter(out);
+				new Thread(arr).start();
 				new Thread(arw).start();
 				
-				byte[] inputBytes = new byte[BUFFER_LEN];
-				byte[][] inputBytesContainer = {inputBytes};
+				byte[][] inputBytesContainer = {new byte[BUFFER_LEN]};
 				int bytesRead;
 				byte bigramA = 0, bigramB;
 				boolean charStored = false;
@@ -301,12 +301,11 @@ public class Cipher {
 				List<Byte> carriedChars = null;
 				
 				outputBytes = new byte[BUFFER_LEN];
-				outputBytesContainer = new byte[][] {outputBytes};
 				outputCounter = 0;
 				
 				while ((bytesRead = arr.getNextBytes(inputBytesContainer)) != -1) {
 					for (int i = 0; i < bytesRead; ++i) {
-						b = inputBytes[i];
+						b = inputBytesContainer[0][i];
 						
 						if (b < 0) {
 							// non ASCII character
@@ -365,6 +364,8 @@ public class Cipher {
 				
 				in.close();
 				
+				arw.stop();
+				//System.out.println("Output counter: " + outputCounter);
 				out.write(outputBytes, 0, outputCounter);
 				if (charStored) {
 					bigramB = PACKED_CHARS[(short) ' '];
@@ -437,7 +438,8 @@ public class Cipher {
 		
 		private void writeIfFull() throws IOException {
 			if (outputCounter == BUFFER_LEN) {
-				arw.writeBytes(outputBytesContainer);
+				out.write(outputBytes);
+				arw.writeBytes(outputBytes);
 				outputCounter = 0;
 			}
 		}
@@ -511,6 +513,7 @@ public class Cipher {
 			private BufferedOutputStream out;
 			private byte[] outputBytes;
 			private boolean waiting;
+			private boolean running;
 			
 			public AsyncResourceWriter(BufferedOutputStream out) {
 				this.out = out;
@@ -520,21 +523,25 @@ public class Cipher {
 			
 			@Override
 			public void run() {
-				while (true) {
+				running = true;
+				while (running) {
 					try {
-						while (waiting()) {}
-						out.write(outputBytes);
-						setWaiting(true);
+						while (waiting() && running) {}
+						
+						if (running) {
+							out.write(outputBytes);
+							setWaiting(true);
+						}
 					} catch(IOException e) {
 						e.printStackTrace();
 					}
 				}
 			}
 			
-			public void writeBytes(byte[][] bytes) {
+			public void writeBytes(byte[] bytes) {
 				while (!waiting()) {}
 				
-				outputBytes = bytes[0];
+				outputBytes = Arrays.copyOf(bytes, bytes.length);
 				setWaiting(false);
 			}
 			
@@ -550,6 +557,9 @@ public class Cipher {
 				}
 			}
 			
+			public void stop() {
+				running = false;
+			}
 		}
 		
 	}

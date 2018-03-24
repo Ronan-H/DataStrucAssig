@@ -13,6 +13,10 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Menu {
+	public static final String SSD_ROOT = ".";
+	public static final String HDD_ROOT = "G:/FourSquareCipher";
+	public static final String ROOT_DIR = HDD_ROOT;
+	
 	private Scanner console;
 	private boolean running;
 	
@@ -29,7 +33,7 @@ public class Menu {
 		int fileChooseResult;
 		boolean encryptMode;
 		boolean writeToFile;
-		final String defaultInputFile = "output/WarAndPeace-LeoTolstoy.txt";
+		final String defaultInputFile = ROOT_DIR + "/output/WarAndPeace-LeoTolstoy.txt";
 		String startingDir;
 		URL inputURL = null;
 		boolean validURL;
@@ -87,12 +91,12 @@ public class Menu {
 					// read from file
 					if (encryptMode) {
 						fileChooser.setSelectedFile(new File(defaultInputFile));
-						startingDir = "./input/";
+						startingDir = ROOT_DIR + "/input/";
 					}
 					else {
 						// Decrypt mode
 						fileChooser.setSelectedFile(null);
-						startingDir = "./output/";
+						startingDir = ROOT_DIR + "/output/";
 					}
 					
 					fileChooser.setCurrentDirectory(new File(startingDir));
