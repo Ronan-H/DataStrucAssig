@@ -120,8 +120,6 @@ public class Cipher {
 		for (short i = 0; i < encryptArr.length; ++i) {
 			decryptArr[encryptArr[i]] = i;
 		}
-		
-		warmup();
 	}
 	
 	public static String generateRandomKey() {
@@ -228,23 +226,6 @@ public class Cipher {
 	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, readFromURL, writeToFile);
 		cipherProcessor.processFile();
-	}
-	
-	public void warmup() {
-		/*
-		byte[] b;
-		for (int n = 0; n < 10000; ++n) {
-			for (int i = 0; i < PACKED_CHARS.length; ++i) {
-				for (int j = 0; j < PACKED_CHARS.length; ++j) {
-					try {
-						b = encryptChars(PACKED_CHARS[i], PACKED_CHARS[j]);
-						b = decryptChars(PACKED_CHARS[i], PACKED_CHARS[j]);
-					}catch(Exception e) {}
-				}
-			}
-		}*/
-		
-		
 	}
 	
 	private class CipherProcessor {
@@ -401,6 +382,7 @@ public class Cipher {
 				}
 				
 				if (carriedChars != null) {
+					System.out.println("Carried chars size: " + carriedChars.size());
 					for (int i = 0; i < carriedChars.size(); ++i) {
 						out.write(carriedChars.get(i));
 					}

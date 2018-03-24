@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -95,8 +96,11 @@ public class Menu {
 					}
 					
 					fileChooser.setCurrentDirectory(new File(startingDir));
-					fileChooser.grabFocus();
+					
+					System.out.println("Showing file chooser window, please choose a file.");
+					System.out.println("(it might be hidden behind some windows)\n");
 					fileChooseResult = fileChooser.showOpenDialog(null);
+					fileChooser.requestFocusInWindow();
 					
 					if (fileChooseResult != JFileChooser.APPROVE_OPTION) {
 						continue;

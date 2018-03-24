@@ -1,2 +1,2 @@
-java -jar FourSquareCipher.jar
+java -jar FourSquareCipher2.jar
 pause
