@@ -3,8 +3,11 @@ package ie.gmit.sw;
 import static java.lang.System.out;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
@@ -46,10 +49,10 @@ public final class Menu {
 		fileChooser.setDialogTitle("Select an input file");
 		
 		out.println();
-		out.println("==============================");
-		out.println("|  Rapid Four Square Cipher  |");
-		out.println("|       By Ronan Hanley      |");
-		out.println("==============================");
+		out.println(" ==============================");
+		out.println(" |  Rapid Four Square Cipher  |");
+		out.println(" |      By Ronan Hanley       |");
+		out.println(" ==============================");
 		out.println();
 		
 		/* Get a key for the cipher and initialize it right away, since the
@@ -67,19 +70,19 @@ public final class Menu {
 				// Encrypt/Decrypt
 				encryptMode = (choice == 1);
 				
-				System.out.println("Read from a file or a URL?");
+				out.println("Read from a file or a URL?");
 				readFromURL = (getUserOption("File", "URL") == 2);
 				
 				if (readFromURL) {
 					// read from url
 					
 					do {
-						System.out.println("Enter a URL to read from\n\n> ");
+						out.print("Enter a URL to read from\n\n> ");
 						try {
 							inputURL = new URL(console.nextLine());
 							validURL = true;
 						} catch (MalformedURLException e) {
-							System.out.println("That URL is not valid. Please try again.\n");
+							out.println("That URL is not valid. Please try again.\n");
 							validURL = false;
 						}
 					} while(!validURL);
@@ -100,8 +103,8 @@ public final class Menu {
 					
 					fileChooser.setCurrentDirectory(new File(startingDir));
 					
-					System.out.println("Showing file chooser window, please choose a file.");
-					System.out.println("(it might be hidden behind some windows)\n");
+					out.println("Showing file chooser window, please choose a file.");
+					out.println("(it might be hidden behind some windows)\n");
 					fileChooseResult = fileChooser.showOpenDialog(null);
 					fileChooser.requestFocusInWindow();
 					
@@ -112,14 +115,26 @@ public final class Menu {
 					resource = fileChooser.getSelectedFile().getAbsolutePath();
 				}
 				
-				System.out.println("Print output to console or a file?");
+				out.println("Print output to console or a file?");
 				writeToFile = (getUserOption("Output to console", "Output to a file") == 2);
 				
-				if (writeToFile) System.out.println("(file will be written to the \"output\" folder of this project)\n");
+				if (writeToFile) out.println("(file will be written to the \"output\" folder of this project)\n");
 				
 				long timerStart = System.nanoTime();
-				cipher.processFile(resource, encryptMode, readFromURL, writeToFile); // encrypt
-				System.out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
+				try {
+					cipher.processFile(resource, encryptMode, readFromURL, writeToFile);
+					out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
+				}
+				catch (FileNotFoundException e) {
+					out.printf("Selected file at:%n%n%s%n%nDoes not exist.%n", resource);
+				}
+				catch (UnknownHostException e) {
+					out.printf("Unknown host \"%s\"%n%n", resource);
+				}
+				catch (IOException e) {
+					System.err.print("Error occured while trying to process the input file/URL!\n\n");
+					e.printStackTrace();
+				}
 				break;
 			case 3:
 				// Change the key
@@ -165,9 +180,11 @@ public final class Menu {
 				valid = false;
 			}
 			
+			out.println();
+			
 			if (!valid) {
 				out.printf("Invalid input; must be a number between %d and %d (inclusive).\n", min, max);
-				out.println("Please try again.");
+				out.println("Please try again.\n");
 			}
 		} while(!valid);
 		
@@ -207,10 +224,10 @@ public final class Menu {
 			key = new KeySanitizer(inputKeys).getSanitizedKey();
 		}
 		
-		out.printf("Key: %n  %s%n", key);
+		out.printf("Key: %n  %s%n%n", key);
 		out.println("Initializing cipher...");
 		cipher = new Cipher(key);
-		out.println("Finished initializing cipher.");
+		out.println("Finished initializing cipher.\n");
 		
 		return cipher;
 	}

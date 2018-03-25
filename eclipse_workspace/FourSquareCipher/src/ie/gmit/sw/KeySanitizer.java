@@ -59,7 +59,7 @@ public final class KeySanitizer {
 	private void equalizeKeys() {
 		if (inputKeys[0].length() > ALPHABET_SIZE) {
 			inputKeys[1].append(inputKeys[0].substring(ALPHABET_SIZE));
-			inputKeys[1].delete(ALPHABET_SIZE, inputKeys[1].length());
+			inputKeys[0].delete(ALPHABET_SIZE, inputKeys[0].length());
 		}
 	}
 	
@@ -79,12 +79,9 @@ public final class KeySanitizer {
 		char c;
 		
 		for (i = 0; i < 2; ++i) {
-			//long startNS = System.nanoTime();
-			// inputKeys[i] = new StringBuilder(inputKeys[i].toString().replaceAll("[^A-Za-z0-9 ,]", ""));
-			
 			for (j = 0; j < inputKeys[i].length(); ++j) {
 				c = inputKeys[i].charAt(j);
-				packedChar = (c < 0 ? -1 : PACKED_CHARS[(int) c]);
+				packedChar = (c < 0 || c > 127 ? -1 : PACKED_CHARS[(int) c]);
 				
 				if (packedChar == -1) {
 					// unsupported character
@@ -92,8 +89,6 @@ public final class KeySanitizer {
 					--j;
 				}
 			}
-			
-			//System.out.printf("Removed invalid chars in %dns.%n", System.nanoTime() - startNS);
 		}
 	}
 	

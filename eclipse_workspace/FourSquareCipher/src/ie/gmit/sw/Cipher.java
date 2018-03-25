@@ -288,11 +288,9 @@ public final class Cipher {
 				System.out.println();
 			}
 		}
-		
-		System.out.println();
 	}
 	
-	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
+	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
 		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, readFromURL, writeToFile);
 		cipherProcessor.processFile();
 	}
@@ -326,172 +324,169 @@ public final class Cipher {
 		 * all at once, this method should use approximatly the same amount of space
 		 * regardless of file size.
 		 */
-		public void processFile() {
+		public void processFile() throws IOException {
+			byte[] inputBytes = new byte[BUFFER_LEN];
+			int bytesRead;
+			byte bigramA = 0, bigramB;
+			boolean charStored = false;
+			byte b;
+			byte packedByte;
+			byte[] processedBytes = new byte[2];
+			// initial size for the carriedChars ArrayList
+			final int CARRIED_CHARS_INITIAL_SIZE = 5;
+			List<Byte> carriedChars = null;
+			
 			long encNs = 0;
 			long encStart;
 			
-			try {
-				String inputFileName = new File(resourcePath).getName();
-				String fileOutputPath;
-				
-				InputStream inStream;
-				OutputStream outStream;
-				URL url;
-				
-				if (readFromURL) {
-					url = new URL(resourcePath);
-					inStream = url.openStream();
+			String inputFileName = new File(resourcePath).getName();
+			String fileOutputPath;
+			
+			InputStream inStream;
+			OutputStream outStream;
+			URL url;
+			
+			if (readFromURL) {
+				url = new URL(resourcePath);
+				inStream = url.openStream();
+			}
+			else {
+				inStream = new FileInputStream(resourcePath);
+			}
+			
+			if (writeToFile) {
+				// strip off the file extension, if there is one
+				if (inputFileName.contains(".")) {
+					inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
 				}
-				else {
-					inStream = new FileInputStream(resourcePath);
-				}
 				
-				if (writeToFile) {
-					// strip off the file extension, if there is one
-					if (inputFileName.contains(".")) {
-						inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
-					}
+				fileOutputPath = String.format("%s/output/%s%s.txt",
+						Menu.ROOT_DIR,
+						inputFileName,
+						(encryptMode ? "_enc" : "_dec"));
+				
+				outStream = new FileOutputStream(fileOutputPath);
+			}
+			else {
+				outStream = System.out;
+			}
+			
+			BufferedInputStream in = new BufferedInputStream(inStream);
+			out = new BufferedOutputStream(outStream);
+			
+			outputBytes = new byte[BUFFER_LEN];
+			outputCounter = 0;
+			
+			while ((bytesRead = in.read(inputBytes)) != -1) {
+				//encStart = System.nanoTime();
+				
+				for (int i = 0; i < bytesRead; ++i) {
+					b = inputBytes[i];
 					
-					fileOutputPath = String.format("%s/output/%s%s.txt",
-							Menu.ROOT_DIR,
-							inputFileName,
-							(encryptMode ? "_enc" : "_dec"));
-					
-					outStream = new FileOutputStream(fileOutputPath);
-				}
-				else {
-					outStream = System.out;
-				}
-				
-				BufferedInputStream in = new BufferedInputStream(inStream);
-				out = new BufferedOutputStream(outStream);
-				
-				byte[] inputBytes = new byte[BUFFER_LEN];
-				int bytesRead;
-				byte bigramA = 0, bigramB;
-				boolean charStored = false;
-				byte b;
-				byte packedByte;
-				byte[] processedBytes = new byte[2];
-				// initial size for the carriedChars ArrayList
-				final int CARRIED_CHARS_INITIAL_SIZE = 5;
-				List<Byte> carriedChars = null;
-				
-				outputBytes = new byte[BUFFER_LEN];
-				outputCounter = 0;
-				
-				while ((bytesRead = in.read(inputBytes)) != -1) {
-					encStart = System.nanoTime();
-					
-					for (int i = 0; i < bytesRead; ++i) {
-						b = inputBytes[i];
-						
-						if (b < 0) {
-							// non ASCII character
-							packedByte = -1;
-						}
-						else {
-							// ASCII character
-							packedByte = PACKED_CHARS[b];
-						}
-						
-						if (packedByte != -1) {
-							// byte should be encrypted
-							if (charStored) {
-								bigramB = packedByte;
-								
-								if (encryptMode) {
-									processedBytes = encryptChars(bigramA, bigramB);	
-								}
-								else {
-									processedBytes = decryptChars(bigramA, bigramB);
-								}
-								
-								if (carriedChars == null) {
-									writeBytes(processedBytes);
-								}
-								else {
-									writeBytes(processedBytes, carriedChars);
-									carriedChars = null;
-								}
-								
-								charStored = false;
-							}
-							else {
-								bigramA = packedByte;
-								charStored = true;
-							}
-						}
-						else {
-							// packedByte == -1
-							if (charStored) {
-								if (carriedChars == null) {
-									// start a buffer of unsupported chars, to be written later
-									carriedChars = new ArrayList<Byte>(CARRIED_CHARS_INITIAL_SIZE);
-								}
-								
-								carriedChars.add(b);
-							}
-							else {
-								outputBytes[outputCounter++] = b;
-							}
-						}
-						
-						if (outputCounter == BUFFER_LEN) {
-							encNs += System.nanoTime() - encStart;
-							writeIfFull();
-							encStart = System.nanoTime();
-						}
-					}
-					encNs += System.nanoTime() - encStart;
-				}
-				
-				double encTakenMs = encNs / 1000000d;
-				
-				System.out.printf("\n\nTime spent encrypting/decrypting only: %.2fms\n", encTakenMs);
-				
-				in.close();
-				
-				//System.out.println("Output counter: " + outputCounter);
-				out.write(outputBytes, 0, outputCounter);
-				if (charStored) {
-					bigramB = PACKED_CHARS[(short) ' '];
-					
-					if (encryptMode) {
-						processedBytes = encryptChars(bigramA, bigramB);	
+					if (b < 0) {
+						// non ASCII character
+						packedByte = -1;
 					}
 					else {
-						processedBytes = decryptChars(bigramA, bigramB);
+						// ASCII character
+						packedByte = PACKED_CHARS[b];
 					}
 					
-					out.write(processedBytes[0]);
-					
-					if (carriedChars != null) {
-						for (int i = 0; i < carriedChars.size(); ++i) {
-							out.write(carriedChars.get(i));
+					if (packedByte != -1) {
+						// byte should be encrypted
+						if (charStored) {
+							bigramB = packedByte;
+							
+							if (encryptMode) {
+								processedBytes = encryptChars(bigramA, bigramB);	
+							}
+							else {
+								processedBytes = decryptChars(bigramA, bigramB);
+							}
+							
+							if (carriedChars == null) {
+								writeBytes(processedBytes);
+							}
+							else {
+								writeBytes(processedBytes, carriedChars);
+								carriedChars = null;
+							}
+							
+							charStored = false;
 						}
-						
-						carriedChars = null;
+						else {
+							bigramA = packedByte;
+							charStored = true;
+						}
+					}
+					else {
+						// packedByte == -1
+						if (charStored) {
+							if (carriedChars == null) {
+								// start a buffer of unsupported chars, to be written later
+								carriedChars = new ArrayList<Byte>(CARRIED_CHARS_INITIAL_SIZE);
+							}
+							
+							carriedChars.add(b);
+						}
+						else {
+							outputBytes[outputCounter++] = b;
+						}
 					}
 					
-					out.write(processedBytes[1]);
+					if (outputCounter == BUFFER_LEN) {
+//							encNs += System.nanoTime() - encStart;
+						writeIfFull();
+						//encStart = System.nanoTime();
+					}
+				}
+//					encNs += System.nanoTime() - encStart;
+			}
+			
+			//double encTakenMs = encNs / 1000000d;
+			
+//				System.out.printf("\n\nTime spent encrypting/decrypting only: %.2fms\n", encTakenMs);
+			
+			in.close();
+			
+			//System.out.println("Output counter: " + outputCounter);
+			out.write(outputBytes, 0, outputCounter);
+			if (charStored) {
+				bigramB = PACKED_CHARS[(short) ' '];
+				
+				if (encryptMode) {
+					processedBytes = encryptChars(bigramA, bigramB);	
+				}
+				else {
+					processedBytes = decryptChars(bigramA, bigramB);
 				}
 				
+				out.write(processedBytes[0]);
+				
 				if (carriedChars != null) {
-					System.out.println("Carried chars size: " + carriedChars.size());
 					for (int i = 0; i < carriedChars.size(); ++i) {
 						out.write(carriedChars.get(i));
 					}
+					
+					carriedChars = null;
 				}
 				
-				if (writeToFile) {
-					out.close();
+				out.write(processedBytes[1]);
+			}
+			
+			if (carriedChars != null) {
+				System.out.println("Carried chars size: " + carriedChars.size());
+				for (int i = 0; i < carriedChars.size(); ++i) {
+					out.write(carriedChars.get(i));
 				}
-				else {
-					System.out.print("\n\n");
-				}
-			}catch(IOException e) {
-				e.printStackTrace();
+			}
+			
+			if (writeToFile) {
+				out.close();
+			}
+			else {
+				out.flush();
+				System.out.print("\n\n");
 			}
 		}
 		
@@ -522,15 +517,17 @@ public final class Cipher {
 		 * Reasoning: Because of the call to writeIfFull(), worst case this has to write
 		 * n bytes.
 		 * 
-		 * Space complexity: 0
-		 * Reasoning: No extra variables.
+		 * Space complexity: 4 bytes
+		 * Reasoning: 1x int var.
 		 */
 		private void writeBytes(byte[] processedBytes, List<Byte> carriedChars) throws IOException {
+			int j;
+			
 			outputBytes[outputCounter++] = processedBytes[0];
 			
 			writeIfFull();
 			
-			for (int j = 0; j < carriedChars.size(); ++j) {
+			for (j = 0; j < carriedChars.size(); ++j) {
 				outputBytes[outputCounter++] = carriedChars.get(j);
 				writeIfFull();
 			}
@@ -548,7 +545,6 @@ public final class Cipher {
 		private void writeIfFull() throws IOException {
 			if (outputCounter == BUFFER_LEN) {
 				out.write(outputBytes);
-				//arw.writeBytes(outputBytes);
 				outputCounter = 0;
 			}
 		}
