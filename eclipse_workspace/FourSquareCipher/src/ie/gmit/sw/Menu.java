@@ -8,14 +8,13 @@ import java.net.URL;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-public class Menu {
+public final class Menu {
 	public static final String SSD_ROOT = ".";
 	public static final String HDD_ROOT = "G:/FourSquareCipher";
-	public static final String ROOT_DIR = HDD_ROOT;
+	public static final String ROOT_DIR = SSD_ROOT;
 	
 	private Scanner console;
 	private boolean running;

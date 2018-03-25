@@ -1,7 +1,7 @@
 package ie.gmit.sw;
 import static ie.gmit.sw.Cipher.*;
 
-public class KeySanitizer {
+public final class KeySanitizer {
 	private StringBuilder[] inputKeys;
 	private String sanitizedKey = null;
 	
@@ -36,18 +36,26 @@ public class KeySanitizer {
 		// Step 1: Spill any additional chars from key 1 to key 2
 		equalizeKeys();
 		
-		// Step 1: Remove any characters not in the cipher's alphabet
+		// Step 2: Remove any characters not in the cipher's alphabet
 		removeUnsupportedChars();
 		
-		// Step 2: Remove duplicate characters
+		// Step 3: Remove duplicate characters
 		removeDuplicateChar();
 		
-		// Step 3: Append characters, if necessary, to get the right key length
+		// Step 4: Append characters, if necessary, to get the right key length
 		addPadding();
 		
 		sanitizedKey = inputKeys[0].append(inputKeys[1]).toString();
 	}
 	
+	/**
+	 * Running time: O(n)?
+	 * Reasoning: Depends on the running time of StringBuilder.append(), which
+	 * might be O(n).
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: No extra variables.
+	 */
 	private void equalizeKeys() {
 		if (inputKeys[0].length() > ALPHABET_SIZE) {
 			inputKeys[1].append(inputKeys[0].substring(ALPHABET_SIZE));
@@ -55,6 +63,16 @@ public class KeySanitizer {
 		}
 	}
 	
+	/**
+	 * Running time: O(n)
+	 * Reasoning: Running time is proportional time to the size of the
+	 * input key.
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
+	 * Just a few extra variables whose size remains the same when the
+	 * input changes.
+	 */
 	private void removeUnsupportedChars() {
 		int i, j;
 		int packedChar;

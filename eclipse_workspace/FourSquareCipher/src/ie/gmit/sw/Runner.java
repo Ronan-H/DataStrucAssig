@@ -1,6 +1,6 @@
 package ie.gmit.sw;
 
-public class Runner {
+public final class Runner {
 	
 	public void go() {
 		new Menu().go();

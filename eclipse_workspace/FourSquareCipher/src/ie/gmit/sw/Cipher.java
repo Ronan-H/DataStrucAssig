@@ -15,7 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class Cipher {
+public final class Cipher {
 	// number of characters which can be encrypted,
 	// i.e. number of characters in 1 quadrant of the four squares
 	public static final int ALPHABET_SIZE = 64;
@@ -60,6 +60,17 @@ public class Cipher {
 		}
 	}
 	
+	/**
+	 * Running time: O(n^4)
+	 * Reasoning: At one point this method pairs every character in a 2d array
+	 * with every other character in that array, making it O(n^4) (where 'n' is
+	 * SQRT_ALPHABET_SIZE). You could also say it's every permutation of 4
+	 * characters, n*n*n*n, n^4.
+	 * 
+	 * Space complexity: O(n^2)
+	 * Reasoning: The lookup tables must hold every permutation of 2 characters
+	 * from the alphabet. This is n * n characters, or n*2.
+	 */
 	public Cipher(String key) {
 		encryptArr = new short[SQUARED_ALPHABET_SIZE];
 		decryptArr = new short[SQUARED_ALPHABET_SIZE];
@@ -123,6 +134,14 @@ public class Cipher {
 		}
 	}
 	
+	/**
+	 * Running time: O(n)
+	 * Reasoning: Scales with ALPHABET_SIZE (for every character in the alphabet,
+	 * it needs to be added and later plucked out at random)
+	 * 
+	 * Space complexity: O(n)
+	 * Reasoning: Same reasoning as above.
+	 */
 	public static String generateRandomKey() {
 		Random random = new Random();
 		char[] key = new char[ALPHABET_SIZE * 2];
@@ -145,6 +164,16 @@ public class Cipher {
 		return new String(key);
 	}
 	
+	/**
+	 * NOTE: Functions identically to decryptChars()
+	 * 
+	 * Running time: O(1)
+	 * Reasoning: Exact same process regardless of what a or b are.
+	 * Always uses 3 array lookups, each running in constant time.
+	 * 
+	 * Space complexity: O(1)
+	 * Reasoning: (2 + 2) = ~4 bytes
+	 */
 	public byte[] encryptChars(byte a, byte b) {
 		byte[] encrypted = new byte[2];
 		short combinedResult = encryptArr[(short) (a << 6 | b)];
@@ -155,6 +184,16 @@ public class Cipher {
 		return encrypted;
 	}
 	
+	/**
+	 * NOTE: Functions identically to encryptChars()
+	 * 
+	 * Running time: O(1)
+	 * Reasoning: Exact same process regardless of what a or b are.
+	 * Always uses 3 array lookups, each running in constant time.
+	 * 
+	 * Space complexity: O(1)
+	 * Reasoning: (2 + 2) = ~4 bytes
+	 */
 	public byte[] decryptChars(byte a, byte b) {
 		byte[] decrypted = new byte[2];
 		short combinedResult = decryptArr[(short) (a << 6 | b)];
@@ -165,6 +204,14 @@ public class Cipher {
 		return decrypted;
 	}
 	
+	/**
+	 * Running time: O(1)
+	 * Reasoning: Running time varies depending on what c is, but not in a way
+	 * the can be represented in Big O.
+	 * 
+	 * Space complexity: 4 bytes
+	 * Reasoning: 1x int
+	 */
 	private static byte packChar(short c) {
 		int cVal = c;
 		
@@ -184,6 +231,14 @@ public class Cipher {
 		return -1;
 	}
 	
+	/**
+	 * Running time: O(1)
+	 * Reasoning: Running time varies depending on what c is, but not in a way
+	 * the can be represented in Big O.
+	 * 
+	 * Space complexity: 4 bytes
+	 * Reasoning: 1x int
+	 */
 	private static short unpackChar(short c) {
 		int cVal = c;
 		
@@ -200,6 +255,14 @@ public class Cipher {
 		}
 	}
 	
+	/**
+	 * Running time: O(n^2), where 'n' is the length of the square
+	 * Reasoning: Prints a square of chars, side size n. A squares area
+	 * obviously grows by it's length, squared.
+	 * 
+	 * Space complexity: 0 bytes
+	 * Reasoning: No variables held in memory, just prints to the screen.
+	 */
 	public void printSquares() {
 		System.out.println();
 		for (int r = 0; r < sqChars.length; ++r) {
@@ -215,7 +278,12 @@ public class Cipher {
 			
 			if (r == sqChars.length / 2 - 1) {
 				for (int i = 0; i < sqChars[r].length + 1; ++i) {
-					System.out.print(" -");
+					if (i == sqChars[r].length / 2) {
+						System.out.print(" +");
+					}
+					else {
+						System.out.print(" -");
+					}
 				}
 				System.out.println();
 			}
@@ -248,7 +316,21 @@ public class Cipher {
 			this.readFromURL = readFromURL;
 		}
 		
+		/**
+		 * Running time: O(n)
+		 * Reasoning: A complex method, but overall since each byte is read,
+		 * dealt with, then written, it runs in O(n) time.
+		 * 
+		 * 
+		 * Space complexity: O(1)
+		 * Reasoning: Since the file is encrypted "on the fly" and not held in memory
+		 * all at once, this method should use approximatly the same amount of space
+		 * regardless of file size.
+		 */
 		public void processFile() {
+			long encNs = 0;
+			long encStart;
+			
 			try {
 				String inputFileName = new File(resourcePath).getName();
 				String fileOutputPath;
@@ -286,10 +368,10 @@ public class Cipher {
 				AsyncResourceReader arr = new AsyncResourceReader(in);
 				out = new BufferedOutputStream(outStream);
 				arw = new AsyncResourceWriter(out);
-				new Thread(arr).start();
-				new Thread(arw).start();
+//				new Thread(arr).start();
+//				new Thread(arw).start();
 				
-				byte[][] inputBytesContainer = {new byte[BUFFER_LEN]};
+				byte[] inputBytes = new byte[BUFFER_LEN];
 				int bytesRead;
 				byte bigramA = 0, bigramB;
 				boolean charStored = false;
@@ -303,9 +385,11 @@ public class Cipher {
 				outputBytes = new byte[BUFFER_LEN];
 				outputCounter = 0;
 				
-				while ((bytesRead = arr.getNextBytes(inputBytesContainer)) != -1) {
+				while ((bytesRead = in.read(inputBytes)) != -1) {
+					encStart = System.nanoTime();
+					
 					for (int i = 0; i < bytesRead; ++i) {
-						b = inputBytesContainer[0][i];
+						b = inputBytes[i];
 						
 						if (b < 0) {
 							// non ASCII character
@@ -358,9 +442,18 @@ public class Cipher {
 							}
 						}
 						
-						writeIfFull();
+						if (outputCounter == BUFFER_LEN) {
+							encNs += System.nanoTime() - encStart;
+							writeIfFull();
+							encStart = System.nanoTime();
+						}
 					}
+					encNs += System.nanoTime() - encStart;
 				}
+				
+				double encTakenMs = encNs / 1000000d;
+				
+				System.out.printf("\n\nTime spent encrypting/decrypting only: %.2fms\n", encTakenMs);
 				
 				in.close();
 				
@@ -408,6 +501,14 @@ public class Cipher {
 			}
 		}
 		
+		/**
+		 * Running time: O(n)
+		 * Reasoning: Because of the call to writeIfFull(), worst case this has to write
+		 * n bytes.
+		 * 
+		 * Space complexity: 0
+		 * Reasoning: No extra variables.
+		 */
 		private void writeBytes(byte[] processedBytes) throws IOException {
 			if (outputCounter == BUFFER_LEN -1) {
 				outputBytes[outputCounter++] = processedBytes[0];
@@ -422,7 +523,14 @@ public class Cipher {
 			}
 		}
 		
-
+		/**
+		 * Running time: O(n)
+		 * Reasoning: Because of the call to writeIfFull(), worst case this has to write
+		 * n bytes.
+		 * 
+		 * Space complexity: 0
+		 * Reasoning: No extra variables.
+		 */
 		private void writeBytes(byte[] processedBytes, List<Byte> carriedChars) throws IOException {
 			outputBytes[outputCounter++] = processedBytes[0];
 			
@@ -436,10 +544,17 @@ public class Cipher {
 			outputBytes[outputCounter++] = processedBytes[1];
 		}
 		
+		/**
+		 * Running time: O(n)
+		 * Reasoning: Running times grows linearly depending on BUFFER_LEN.
+		 * 
+		 * Space complexity: 0
+		 * Reasoning: No extra variables.
+		 */
 		private void writeIfFull() throws IOException {
 			if (outputCounter == BUFFER_LEN) {
 				out.write(outputBytes);
-				arw.writeBytes(outputBytes);
+				//arw.writeBytes(outputBytes);
 				outputCounter = 0;
 			}
 		}

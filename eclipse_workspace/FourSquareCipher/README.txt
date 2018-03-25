@@ -5,7 +5,7 @@ Extra features:
 - Extended alphabet (64 characters including A-Z, a-z, 0-9, space and comma).
 - Allows unsupported characters to be "passed through the cipher"/preserved: they are outputted without being encrypted.
 -> This means if you encrypt and decrypt a file, it should be identical (unless a buffer character was added).
-->> Buffer character is a space so contents appear identical.
+->> Buffer character is a space so contents always appear identical.
 - A sophisticated encryption/decryption approach to allow for insane speeds.
 - Full key input sanitization: any string at all can be entered for a key and a logical sanitized key will always be produced.
 - Option to display the cipher's four squares (containing the key and alphabet).
