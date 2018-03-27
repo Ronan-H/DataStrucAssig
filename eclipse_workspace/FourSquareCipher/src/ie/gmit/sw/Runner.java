@@ -2,13 +2,11 @@ package ie.gmit.sw;
 
 public final class Runner {
 	
-	public void go() {
-		new Menu().go();
-	}
-	
+	/**
+	 * Main method; breaks into OO code ASAP.
+	 */
 	public static void main(String[] args) {
-		Runner runner = new Runner();
-		runner.go();
+		new Menu().go();
 	}
 	
 }
