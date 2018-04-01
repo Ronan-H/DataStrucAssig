@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -17,10 +16,15 @@ import java.util.Random;
 public final class Cipher {
 	// number of characters which can be encrypted,
 	// i.e. number of characters in 1 quadrant of the four squares
-	public static final String ALPHABET_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,";
+	public static final String ALPHABET_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,.!?'\"\n/\\-=_+{}();";
 	public static final int ALPHABET_SIZE = ALPHABET_STRING.length();
 	public static final int SQUARED_ALPHABET_SIZE = (int)Math.pow(ALPHABET_SIZE, 2);
 	public static final int SQRT_ALPHABET_SIZE = (int)Math.sqrt(ALPHABET_SIZE);
+	// number of bits needed to fit a "packed" char.
+	// should be ceil(log2(ALPBHABET_SIZE))
+	private static final byte packedBits = 7;
+	
+	private static final byte qMarkIndex = (byte)ALPHABET_STRING.indexOf('?'); 
 	
 	// 3d array (3x 2 dim), containing the characters in the four squares,
 	// in "packed" form.
@@ -55,18 +59,17 @@ public final class Cipher {
 	 * This conversion is already done in packChar() and unpackChar().
 	 */
 	static {
-		PACKED_CHARS = new byte[256];
-		UNPACKED_CHARS = new byte[256];
+		PACKED_CHARS = new byte[128];
+		UNPACKED_CHARS = new byte[ALPHABET_SIZE];
 		
-		byte i;
+		short i;
 		
-		for (i = 0; i < Byte.MAX_VALUE; ++i) {
-			PACKED_CHARS[i] = -1;
-			UNPACKED_CHARS[i] = -1;
+		for (i = 0; i < PACKED_CHARS.length; ++i) {
+			PACKED_CHARS[i] = qMarkIndex;
 		}
 		
 		for (i = 0; i < ALPHABET_SIZE; ++i) {
-			PACKED_CHARS[ALPHABET_STRING.charAt(i)] = i;
+			PACKED_CHARS[ALPHABET_STRING.charAt(i)] = (byte) i;
 		}
 		
 		for (i = 0; i < ALPHABET_SIZE; ++i) {
@@ -89,8 +92,13 @@ public final class Cipher {
 		// must initialise these arrays here instead of in init() as they are marked final
 		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
 		
-		encryptArr = new short[SQUARED_ALPHABET_SIZE];
-		decryptArr = new short[SQUARED_ALPHABET_SIZE];
+		encryptArr = new short[(0x7F << packedBits | 0x7F) + 1];
+		decryptArr = new short[(0x7F << packedBits | 0x7F) + 1];
+		
+		// ensure all unused encryptArr indexes are -1 so they aren't used
+		for (int i = 0; i < encryptArr.length; ++i) {
+			encryptArr[i] = -1;
+		}
 		
 		fourSq = new byte[3][SQRT_ALPHABET_SIZE][SQRT_ALPHABET_SIZE];
 		
@@ -142,16 +150,27 @@ public final class Cipher {
 						short toChar2 = fourSq[2][c2y][c1x];
 						
 						// use bit shifts to store 2x 6 bit numbers as a single short
-						short combined = (short) (toChar1 << 6 | toChar2);
-						encryptArr[arrCounter++] = combined;
+						short combined = (short) (toChar1 << packedBits | toChar2);
+						encryptArr[arrCounter] = combined;
+						
+						arrCounter++;
+						if ((arrCounter & 0x7F) == ALPHABET_SIZE) {
+							arrCounter = ((arrCounter >> packedBits) + 1) << packedBits;
+						}
 					}
 				}
 			}
 		}
 		
+		System.out.println();
 		// decryption array is just the reverse of the encryption array
-		// (indexesswapped with values at that index)
+		// (indexes swapped with values at that index)
 		for (short i = 0; i < encryptArr.length; ++i) {
+			if (encryptArr[i] == -1) {
+				// unused index
+				continue;
+			}
+			
 			decryptArr[encryptArr[i]] = i;
 		}
 	}
@@ -198,16 +217,13 @@ public final class Cipher {
 	 * Space complexity: O(1)
 	 * Reasoning: (2 + 2) = ~4 bytes
 	 */
-	public byte[] encryptChars(byte a, byte b) {
-		byte[] encrypted = new byte[2];
+	public void encryptBigram(byte[] bigram) {
 		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = encryptArr[a << 6 | b];
+		short combinedResult = encryptArr[bigram[0] << packedBits | bigram[1]];
 		
 		// separate the 6 bit number back out, again with bit shifts
-		encrypted[0] = UNPACKED_CHARS[combinedResult >> 6];
-		encrypted[1] = UNPACKED_CHARS[combinedResult & 0x3F];
-		
-		return encrypted;
+		bigram[0] = UNPACKED_CHARS[combinedResult >> packedBits];
+		bigram[1] = UNPACKED_CHARS[combinedResult & 0x7F];
 	}
 	
 	/**
@@ -220,16 +236,13 @@ public final class Cipher {
 	 * Space complexity: O(1)
 	 * Reasoning: (2 + 2) = ~4 bytes
 	 */
-	public byte[] decryptChars(byte a, byte b) {
-		byte[] decrypted = new byte[2];
+	public void decryptBigram(byte[] bigram) {
 		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = decryptArr[a << 6 | b];
+		short combinedResult = decryptArr[bigram[0] << packedBits | bigram[1]];
 		
 		// separate the 6 bit number back out, again with bit shifts
-		decrypted[0] = UNPACKED_CHARS[combinedResult >> 6];
-		decrypted[1] = UNPACKED_CHARS[combinedResult & 0x3F];
-		
-		return decrypted;
+		bigram[0] = UNPACKED_CHARS[combinedResult >> packedBits];
+		bigram[1] = UNPACKED_CHARS[combinedResult & 0x7F];
 	}
 	
 	/**
@@ -250,7 +263,13 @@ public final class Cipher {
 			System.out.print(" ");
 			// print the alphabet/key characters
 			for (int c = 0; c < sqChars[r].length; ++c) {
-				System.out.print(sqChars[r][c] + " ");
+				char sqc = sqChars[r][c];
+				if (sqc == '\n') {
+					System.out.print("nl");
+				}
+				else {
+					System.out.print(sqChars[r][c] + " ");
+				}
 				
 				// print the middle line going down
 				if (c == sqChars[r].length / 2 - 1) {
@@ -300,10 +319,9 @@ public final class Cipher {
 		// Read from URL
 		// True: Read from URL
 		// False: Read from File
-		
 		// how many bytes to be read into the buffer each time
 		// the value of 8192 seems most efficient
-		private static final int BUFFER_LEN = 8192;
+		private static final int BUFFER_LEN = 4096;
 		private BufferedOutputStream out;
 		// keeps count of the amount of bytes written to the buffer
 		private int outputCounter;
@@ -333,25 +351,7 @@ public final class Cipher {
 			byte[] inputBytes = new byte[BUFFER_LEN];
 			// keeps track of what the last byte read from the buffer was
 			int bytesRead;
-			// used to store a single bigram, as "packed" values
-			byte bigramA = 0, bigramB;
-			// used to keep track if bigramA is filled, so that unsupported characters
-			// can be written in the right order, and to know where to store the next char
-			// (in bigramA or bigramB)
-			boolean charStored = false;
-			// byte read in
-			byte b;
-			// "packed" form of b. See Cipher.PACKED_CHARS
-			byte packedByte;
-			// encrypted/decrypted of bigramA and bigramB
-			byte[] processedBytes = new byte[2];
-			// initial size for the carriedChars ArrayList
-			final int CARRIED_CHARS_INITIAL_SIZE = 5;
-			// unsupported character buffer
-			List<Byte> carriedChars = null;
-			
-			long encNs = 0;
-			long encStart;
+			byte[] bigram = new byte[2];
 			
 			String inputFileName = new File(resourcePath).getName();
 			String fileOutputPath;
@@ -359,6 +359,8 @@ public final class Cipher {
 			InputStream inStream;
 			OutputStream outStream;
 			URL url;
+			
+			int i, j;
 			
 			if (readFromURL) {
 				url = new URL(resourcePath);
@@ -397,109 +399,43 @@ public final class Cipher {
 			
 			// fill the buffer until no more bytes are available
 			while ((bytesRead = in.read(inputBytes)) != -1) {
-				for (int i = 0; i < bytesRead; ++i) {
-					b = inputBytes[i];
-					
-					if (b < 0) {
-						// non ASCII character
-						packedByte = -1;
-					}
-					else {
-						// ASCII character
-						packedByte = PACKED_CHARS[b];
-					}
-					
-					if (packedByte != -1) {
-						// byte should be encrypted
-						if (charStored) {
-							// bigramA is filled, bigramB is empty
-							bigramB = packedByte;
-							
-							if (encryptMode) {
-								// encrypt
-								processedBytes = encryptChars(bigramA, bigramB);	
-							}
-							else {
-								// decrypt
-								processedBytes = decryptChars(bigramA, bigramB);
-							}
-							
-							// make sure to output any unsupported characters found between bigramA and bigramB
-							if (carriedChars == null) {
-								writeBytes(processedBytes);
-							}
-							else {
-								writeBytes(processedBytes, carriedChars);
-								carriedChars = null;
-							}
-							
-							charStored = false;
+				for (i = 0; i < bytesRead; i += 2) {
+					for (j = 0; j < 2; ++j) {
+						bigram[j] = inputBytes[i + j];
+						
+						if (bigram[j] < 0) {
+							// non ASCII character
+							bigram[j] = qMarkIndex;
 						}
 						else {
-							// bigramA and bigramB both empty
-							bigramA = packedByte;
-							charStored = true;
-						}
-					}
-					else {
-						// packedByte == -1
-						if (charStored) {
-							// bigramA is filled and an unsupported character was found.
-							// We must store it until later when bigramB is filled. Then, the
-							// bigram can be encrypted/decrypted, then bigramA can be outputted,
-							// then the buffer of unsupported characters, then bigramB. This way,
-							// the characters will always retain their original order.
-							if (carriedChars == null) {
-								// start a buffer of unsupported chars, to be written later
-								carriedChars = new ArrayList<Byte>(CARRIED_CHARS_INITIAL_SIZE);
-							}
-							
-							// add unsupported character to the buffer
-							carriedChars.add(b);
-						}
-						else {
-							// since bigramA is empty this unsupported character can be written right away
-							outputBytes[outputCounter++] = b;
+							bigram[j] = PACKED_CHARS[bigram[j]];
 						}
 					}
 					
-					if (outputCounter == BUFFER_LEN) {
-						// buffer is full; write it and start a new buffer
-						writeIfFull();
+					if (encryptMode) {
+						encryptBigram(bigram);
+					}
+					else {
+						decryptBigram(bigram);
+					}
+					
+					// TODO optimize this
+					for (j = 0; j < 2; ++j) {
+						outputBytes[outputCounter++] = bigram[j];
+						
+						if (outputCounter == BUFFER_LEN) {
+							out.write(outputBytes);
+							outputCounter = 0;
+						}
 					}
 				}
 			}
 			
-			in.close();
-			
-			// write the remaining bytes (partially filled buffer)
+			// write any remaining bytes in the buffer
 			out.write(outputBytes, 0, outputCounter);
-			if (charStored) {
-				// bigramA is full but there's no more chars; add the padding char
-				bigramB = PACKED_CHARS[(short) ' '];
-				
-				if (encryptMode) {
-					processedBytes = encryptChars(bigramA, bigramB);	
-				}
-				else {
-					processedBytes = decryptChars(bigramA, bigramB);
-				}
-				
-				out.write(processedBytes[0]);
-				
-				// write any unsupported chars
-				if (carriedChars != null) {
-					for (int i = 0; i < carriedChars.size(); ++i) {
-						out.write(carriedChars.get(i));
-					}
-					
-					carriedChars = null;
-				}
-				
-				out.write(processedBytes[1]);
-			}
 			
 			// close files etc.
+			in.close();
 			if (writeToFile) {
 				out.close();
 			}
@@ -509,65 +445,6 @@ public final class Cipher {
 			}
 		}
 		
-		/**
-		 * Running time: O(n)
-		 * Reasoning: Because of the call to writeIfFull(), worst case this has to write
-		 * n bytes.
-		 * 
-		 * Space complexity: 0
-		 * Reasoning: No extra variables.
-		 */
-		private void writeBytes(byte[] processedBytes) throws IOException {
-			if (outputCounter == BUFFER_LEN -1) {
-				// reached end of buffer. must write 1 byte, make a new buffer, then write the other
-				outputBytes[outputCounter++] = processedBytes[0];
-				
-				writeIfFull();
-				
-				outputBytes[outputCounter++] = processedBytes[1];
-			}
-			else {
-				outputBytes[outputCounter++] = processedBytes[0];
-				outputBytes[outputCounter++] = processedBytes[1];
-			}
-		}
-		
-		/**
-		 * Running time: O(n)
-		 * Reasoning: Because of the call to writeIfFull(), worst case this has to write
-		 * n bytes.
-		 * 
-		 * Space complexity: 4 bytes
-		 * Reasoning: 1x int var.
-		 */
-		private void writeBytes(byte[] processedBytes, List<Byte> carriedChars) throws IOException {
-			int j;
-			
-			outputBytes[outputCounter++] = processedBytes[0];
-			
-			writeIfFull();
-			
-			for (j = 0; j < carriedChars.size(); ++j) {
-				outputBytes[outputCounter++] = carriedChars.get(j);
-				writeIfFull();
-			}
-			
-			outputBytes[outputCounter++] = processedBytes[1];
-		}
-		
-		/**
-		 * Running time: O(n)
-		 * Reasoning: Running times grows linearly depending on BUFFER_LEN.
-		 * 
-		 * Space complexity: 0
-		 * Reasoning: No extra variables.
-		 */
-		private void writeIfFull() throws IOException {
-			if (outputCounter == BUFFER_LEN) {
-				out.write(outputBytes);
-				outputCounter = 0;
-			}
-		}
 	}
 	
 }
