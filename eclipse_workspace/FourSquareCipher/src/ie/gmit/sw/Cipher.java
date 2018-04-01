@@ -217,13 +217,13 @@ public final class Cipher {
 	 * Space complexity: O(1)
 	 * Reasoning: (2 + 2) = ~4 bytes
 	 */
-	public void encryptBigram(byte[] bigram) {
+	public void encryptBigram(byte[] array, int index) {
 		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = encryptArr[bigram[0] << packedBits | bigram[1]];
+		short combinedResult = encryptArr[array[index] << packedBits | array[index + 1]];
 		
 		// separate the 6 bit number back out, again with bit shifts
-		bigram[0] = UNPACKED_CHARS[combinedResult >> packedBits];
-		bigram[1] = UNPACKED_CHARS[combinedResult & 0x7F];
+		array[index] = UNPACKED_CHARS[combinedResult >> packedBits];
+		array[index + 1] = UNPACKED_CHARS[combinedResult & 0x7F];
 	}
 	
 	/**
@@ -236,13 +236,13 @@ public final class Cipher {
 	 * Space complexity: O(1)
 	 * Reasoning: (2 + 2) = ~4 bytes
 	 */
-	public void decryptBigram(byte[] bigram) {
+	public void decryptBigram(byte[] array, int index) {
 		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = decryptArr[bigram[0] << packedBits | bigram[1]];
+		short combinedResult = decryptArr[array[index] << packedBits | array[index + 1]];
 		
 		// separate the 6 bit number back out, again with bit shifts
-		bigram[0] = UNPACKED_CHARS[combinedResult >> packedBits];
-		bigram[1] = UNPACKED_CHARS[combinedResult & 0x7F];
+		array[index] = UNPACKED_CHARS[combinedResult >> packedBits];
+		array[index + 1] = UNPACKED_CHARS[combinedResult & 0x7F];
 	}
 	
 	/**
@@ -321,12 +321,8 @@ public final class Cipher {
 		// False: Read from File
 		// how many bytes to be read into the buffer each time
 		// the value of 8192 seems most efficient
-		private static final int BUFFER_LEN = 4096;
+		private static final int BUFFER_LEN = 8192;
 		private BufferedOutputStream out;
-		// keeps count of the amount of bytes written to the buffer
-		private int outputCounter;
-		// the output buffer
-		private byte[] outputBytes;
 		
 		public CipherProcessor(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
 			this.encryptMode = encryptMode;
@@ -348,10 +344,9 @@ public final class Cipher {
 		 */
 		public void processFile() throws IOException {
 			// the input byte buffer
-			byte[] inputBytes = new byte[BUFFER_LEN];
+			byte[] bufferBytes = new byte[BUFFER_LEN];
 			// keeps track of what the last byte read from the buffer was
 			int bytesRead;
-			byte[] bigram = new byte[2];
 			
 			String inputFileName = new File(resourcePath).getName();
 			String fileOutputPath;
@@ -360,14 +355,13 @@ public final class Cipher {
 			OutputStream outStream;
 			URL url;
 			
-			int i, j;
+			int i;
 			
 			if (readFromURL) {
 				url = new URL(resourcePath);
 				inStream = url.openStream();
 			}
 			else {
-				
 				// read from file
 				inStream = new FileInputStream(resourcePath);
 			}
@@ -394,45 +388,31 @@ public final class Cipher {
 			BufferedInputStream in = new BufferedInputStream(inStream);
 			out = new BufferedOutputStream(outStream);
 			
-			outputBytes = new byte[BUFFER_LEN];
-			outputCounter = 0;
-			
 			// fill the buffer until no more bytes are available
-			while ((bytesRead = in.read(inputBytes)) != -1) {
-				for (i = 0; i < bytesRead; i += 2) {
-					for (j = 0; j < 2; ++j) {
-						bigram[j] = inputBytes[i + j];
-						
-						if (bigram[j] < 0) {
-							// non ASCII character
-							bigram[j] = qMarkIndex;
-						}
-						else {
-							bigram[j] = PACKED_CHARS[bigram[j]];
-						}
-					}
-					
-					if (encryptMode) {
-						encryptBigram(bigram);
+			while ((bytesRead = in.read(bufferBytes)) != -1) {
+				// convert all bytes in the buffer to "packed form"
+				for (i = 0; i < bytesRead; ++i) {
+					if (bufferBytes[i] < 0) {
+						// non ASCII character
+						bufferBytes[i] = qMarkIndex;
 					}
 					else {
-						decryptBigram(bigram);
-					}
-					
-					// TODO optimize this
-					for (j = 0; j < 2; ++j) {
-						outputBytes[outputCounter++] = bigram[j];
-						
-						if (outputCounter == BUFFER_LEN) {
-							out.write(outputBytes);
-							outputCounter = 0;
-						}
+						bufferBytes[i] = PACKED_CHARS[bufferBytes[i]];
 					}
 				}
+				
+				// encrypt/decrypt byte pairs in place
+				for (i = 0; i < bytesRead; i += 2) {
+					if (encryptMode) {
+						encryptBigram(bufferBytes, i);
+					}
+					else {
+						decryptBigram(bufferBytes, i);
+					}
+				}
+				
+				out.write(bufferBytes, 0, bytesRead);
 			}
-			
-			// write any remaining bytes in the buffer
-			out.write(outputBytes, 0, outputCounter);
 			
 			// close files etc.
 			in.close();
