@@ -16,7 +16,9 @@ import java.util.Random;
 public final class Cipher {
 	// number of characters which can be encrypted,
 	// i.e. number of characters in 1 quadrant of the four squares
-	public static final String ALPHABET_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,.!?'\"\n/\\-=_+{}();";
+	public static final String ALPHABET_STRING
+		= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,.!?'\"/-=_+*~();:\n";
+	
 	public static final int ALPHABET_SIZE = ALPHABET_STRING.length();
 	public static final int SQUARED_ALPHABET_SIZE = (int)Math.pow(ALPHABET_SIZE, 2);
 	public static final int SQRT_ALPHABET_SIZE = (int)Math.sqrt(ALPHABET_SIZE);
@@ -26,6 +28,7 @@ public final class Cipher {
 	
 	private static final byte qMarkIndex = (byte)ALPHABET_STRING.indexOf('?'); 
 	
+	private final String key;
 	// 3d array (3x 2 dim), containing the characters in the four squares,
 	// in "packed" form.
 	private final byte[][][] fourSq;
@@ -75,6 +78,9 @@ public final class Cipher {
 		for (i = 0; i < ALPHABET_SIZE; ++i) {
 			UNPACKED_CHARS[i] = (byte) ALPHABET_STRING.charAt(i);
 		}
+		
+		// read carriage return as a space (it should be ignored)
+		PACKED_CHARS['\r'] = (byte)ALPHABET_STRING.indexOf(' ');
 	}
 	
 	/**
@@ -89,6 +95,8 @@ public final class Cipher {
 	 * from the alphabet. This is n * n characters, or n*2.
 	 */
 	public Cipher(String key) {
+		this.key = key;
+		
 		// must initialise these arrays here instead of in init() as they are marked final
 		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
 		
@@ -162,7 +170,6 @@ public final class Cipher {
 			}
 		}
 		
-		System.out.println();
 		// decryption array is just the reverse of the encryption array
 		// (indexes swapped with values at that index)
 		for (short i = 0; i < encryptArr.length; ++i) {
@@ -221,9 +228,9 @@ public final class Cipher {
 		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
 		short combinedResult = encryptArr[array[index] << packedBits | array[index + 1]];
 		
-		// separate the 6 bit number back out, again with bit shifts
-		array[index] = UNPACKED_CHARS[combinedResult >> packedBits];
-		array[index + 1] = UNPACKED_CHARS[combinedResult & 0x7F];
+		// separate the 2x 6 bit numbers back out, again with bit shifts
+		array[index] = (byte)(combinedResult >> packedBits);
+		array[index + 1] = (byte)(combinedResult & 0x7F);
 	}
 	
 	/**
@@ -241,8 +248,29 @@ public final class Cipher {
 		short combinedResult = decryptArr[array[index] << packedBits | array[index + 1]];
 		
 		// separate the 6 bit number back out, again with bit shifts
-		array[index] = UNPACKED_CHARS[combinedResult >> packedBits];
-		array[index + 1] = UNPACKED_CHARS[combinedResult & 0x7F];
+		array[index] = (byte)(combinedResult >> packedBits);
+		array[index + 1] = (byte)(combinedResult & 0x7F);
+	}
+	
+	public void printKey() {
+		int i;
+		char c;
+		
+		System.out.println("Key:");
+		
+		
+		for (i = 0; i < key.length(); ++i) {
+			c = key.charAt(i);
+			
+			if (c == '\n') {
+				System.out.print("^");
+			}
+			else {
+				System.out.print(c);
+			}
+		}
+		
+		System.out.println("\n\n(new lines are represented as the character \'^\')\n");
 	}
 	
 	/**
@@ -258,14 +286,13 @@ public final class Cipher {
 	 * and bottom left squares are the two key parts, as in the PDF.
 	 */
 	public void printSquares() {
-		System.out.println();
 		for (int r = 0; r < sqChars.length; ++r) {
 			System.out.print(" ");
 			// print the alphabet/key characters
 			for (int c = 0; c < sqChars[r].length; ++c) {
 				char sqc = sqChars[r][c];
 				if (sqc == '\n') {
-					System.out.print("nl");
+					System.out.print("^ ");
 				}
 				else {
 					System.out.print(sqChars[r][c] + " ");
@@ -292,7 +319,7 @@ public final class Cipher {
 			}
 		}
 		
-		System.out.println();
+		System.out.println("\n\n(new lines are represented as the character \'^\')\n");
 	}
 	
 	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
@@ -390,6 +417,11 @@ public final class Cipher {
 			
 			// fill the buffer until no more bytes are available
 			while ((bytesRead = in.read(bufferBytes)) != -1) {
+				if (bytesRead % 2 != 0) {
+					// off number of bytes; add the buffer character (space)
+					bufferBytes[bytesRead++] = ' ';
+				}
+				
 				// convert all bytes in the buffer to "packed form"
 				for (i = 0; i < bytesRead; ++i) {
 					if (bufferBytes[i] < 0) {
@@ -409,6 +441,11 @@ public final class Cipher {
 					else {
 						decryptBigram(bufferBytes, i);
 					}
+				}
+				
+				// convert all bytes back to "unpacked" form (ASCII chars)
+				for (i = 0; i < bytesRead; ++i) {
+					bufferBytes[i] = UNPACKED_CHARS[bufferBytes[i]];
 				}
 				
 				out.write(bufferBytes, 0, bytesRead);

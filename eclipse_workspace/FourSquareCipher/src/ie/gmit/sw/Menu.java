@@ -75,7 +75,6 @@ public final class Menu {
 				
 				if (readFromURL) {
 					// read from url
-					
 					do {
 						out.print("Enter a URL to read from\n\n> ");
 						try {
@@ -92,16 +91,14 @@ public final class Menu {
 				else {
 					// read from file
 					if (encryptMode) {
+						fileChooser.setCurrentDirectory(new File(ROOT_DIR + "/input/"));
 						fileChooser.setSelectedFile(new File(defaultInputFile));
-						startingDir = ROOT_DIR + "/input/";
 					}
 					else {
-						// Decrypt mode
-						fileChooser.setSelectedFile(null);
-						startingDir = ROOT_DIR + "/output/";
+						// decrypt mode
+						fileChooser.setCurrentDirectory(new File(ROOT_DIR + "/output/"));
+						fileChooser.setSelectedFile(new File(""));
 					}
-					
-					fileChooser.setCurrentDirectory(new File(startingDir));
 					
 					out.println("Showing file chooser window, please choose a file.");
 					out.println("(it might be hidden behind some windows)\n");
@@ -198,6 +195,7 @@ public final class Menu {
 		int numKeys;
 		StringBuilder[] inputKeys = {null, null};
 		Cipher cipher;
+		long timerStart;
 		
 		out.println("Choose a source for the cipher key");
 		choice = getUserOption("Randomly generate a key for me", "Let me enter the key");
@@ -217,17 +215,18 @@ public final class Menu {
 			numKeys = getUserOption("I want one key", "I want to enter two keys");
 			
 			for (i = 0; i < numKeys; ++i) {
-				out.printf("\nPlease enter key %d:\n> ", (i + 1));
-				inputKeys[i] = new StringBuilder(console.nextLine());
+				out.printf("Enter key %d of %d (use \'^\' for the newline character):\n> ", (i + 1), numKeys);
+				inputKeys[i] = new StringBuilder(console.nextLine().replace('^', '\n'));
 			}
 			
 			key = new KeySanitizer(inputKeys).getSanitizedKey();
 		}
 		
-		out.printf("Key: %n  %s%n%n", key);
 		out.println("Initializing cipher...");
+		timerStart = System.nanoTime();
 		cipher = new Cipher(key);
-		out.println("Finished initializing cipher.\n");
+		out.printf("Cipher initialized in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
+		cipher.printKey();
 		
 		return cipher;
 	}
