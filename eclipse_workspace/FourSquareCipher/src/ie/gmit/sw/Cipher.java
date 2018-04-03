@@ -1,5 +1,7 @@
 package ie.gmit.sw;
 
+import static java.lang.System.out;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -415,8 +417,13 @@ public final class Cipher {
 			BufferedInputStream in = new BufferedInputStream(inStream);
 			out = new BufferedOutputStream(outStream);
 			
+			long then;
+			long encNs = 0;
+			
 			// fill the buffer until no more bytes are available
 			while ((bytesRead = in.read(bufferBytes)) != -1) {
+				then = System.nanoTime();
+				
 				if (bytesRead % 2 != 0) {
 					// off number of bytes; add the buffer character (space)
 					bufferBytes[bytesRead++] = ' ';
@@ -448,8 +455,12 @@ public final class Cipher {
 					bufferBytes[i] = UNPACKED_CHARS[bufferBytes[i]];
 				}
 				
+				encNs += System.nanoTime() - then;
+				
 				out.write(bufferBytes, 0, bytesRead);
 			}
+			
+			System.out.printf("Millisec spent encrypting/decrypting (without filo IO): %.2fms.%n%n", encNs / 1000000f);
 			
 			// close files etc.
 			in.close();

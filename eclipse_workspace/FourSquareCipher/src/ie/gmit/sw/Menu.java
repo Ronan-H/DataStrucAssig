@@ -35,11 +35,12 @@ public final class Menu {
 		int fileChooseResult;
 		boolean encryptMode;
 		boolean writeToFile;
-		final String defaultInputFile = ROOT_DIR + "/output/WarAndPeace-LeoTolstoy.txt";
+		final String defaultInputFile = ROOT_DIR + "/input/WarAndPeace-LeoTolstoy.txt";
 		String startingDir;
 		URL inputURL = null;
 		boolean validURL;
-		String resource;
+		File resource;
+		String resourcePath;
 		
 		JFileChooser fileChooser = new JFileChooser();
 		FileFilter fileFilter = new FileNameExtensionFilter("Text files", "txt");
@@ -86,7 +87,7 @@ public final class Menu {
 						}
 					} while(!validURL);
 					
-					resource = inputURL.toString();
+					resourcePath = inputURL.toString();
 				}
 				else {
 					// read from file
@@ -109,7 +110,18 @@ public final class Menu {
 						continue;
 					}
 					
-					resource = fileChooser.getSelectedFile().getAbsolutePath();
+					resource = fileChooser.getSelectedFile();
+					resourcePath = resource.getAbsolutePath();
+					
+					if (!resource.exists()) {
+						System.out.println("Selected file does not exist!\n");
+						continue;
+					}
+					
+					if (!resource.canWrite()) {
+						System.out.println("Insufficient permissions to write to chosen file!\n");
+						continue;
+					}
 				}
 				
 				out.println("Print output to console or a file?");
@@ -119,14 +131,15 @@ public final class Menu {
 				
 				long timerStart = System.nanoTime();
 				try {
-					cipher.processFile(resource, encryptMode, readFromURL, writeToFile);
+					cipher.processFile(resourcePath, encryptMode, readFromURL, writeToFile);
 					out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
 				}
 				catch (FileNotFoundException e) {
-					out.printf("Selected file at:%n%n%s%n%nDoes not exist.%n", resource);
+					System.err.println("Error while processing file:\n");
+					e.printStackTrace();
 				}
 				catch (UnknownHostException e) {
-					out.printf("Unknown host \"%s\"%n%n", resource);
+					out.printf("Unknown host \"%s\"%n%n", resourcePath);
 				}
 				catch (IOException e) {
 					System.err.print("Error occured while trying to process the input file/URL!\n\n");
