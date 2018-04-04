@@ -1,5 +1,7 @@
 package ie.gmit.sw;
 
+import static java.lang.System.out;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;

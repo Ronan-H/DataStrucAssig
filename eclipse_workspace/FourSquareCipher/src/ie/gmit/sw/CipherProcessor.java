@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  */
 	public class CipherProcessor {
 		private BufferedOutputStream out;
-		private static final int numThreads = 12;
+		private static final int numThreads = Runtime.getRuntime().availableProcessors();
 		private CipherProcessorUnit[] units;
 		
 		public CipherProcessor(Cipher cipher) {
