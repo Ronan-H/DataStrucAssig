@@ -1,6 +1,16 @@
 package ie.gmit.sw;
 
+import static java.lang.System.out;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -18,7 +28,7 @@ public final class Cipher {
 	// should be ceil(log2(ALPBHABET_SIZE))
 	private static final byte packedBits = 7;
 	
-	public static final byte Q_MARK_INDEX = (byte)ALPHABET_STRING.indexOf('?'); 
+	private static final byte qMarkIndex = (byte)ALPHABET_STRING.indexOf('?'); 
 	
 	private final String key;
 	// 3d array (3x 2 dim), containing the characters in the four squares,
@@ -36,8 +46,6 @@ public final class Cipher {
 	private final short[] decryptArr;
 	// same as fourSq, but instead represented as java chars
 	private final char[][] sqChars;
-	
-	private CipherProcessor cipherProcessor;
 	
 	/**
 	 * Running time: O(1)
@@ -62,7 +70,7 @@ public final class Cipher {
 		short i;
 		
 		for (i = 0; i < PACKED_CHARS.length; ++i) {
-			PACKED_CHARS[i] = Q_MARK_INDEX;
+			PACKED_CHARS[i] = qMarkIndex;
 		}
 		
 		for (i = 0; i < ALPHABET_SIZE; ++i) {
@@ -91,8 +99,6 @@ public final class Cipher {
 	public Cipher(String key) {
 		this.key = key;
 		
-		int i;
-		
 		// must initialise these arrays here instead of in init() as they are marked final
 		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
 		
@@ -100,17 +106,13 @@ public final class Cipher {
 		decryptArr = new short[(0x7F << packedBits | 0x7F) + 1];
 		
 		// ensure all unused encryptArr indexes are -1 so they aren't used
-		for (i = 0; i < encryptArr.length; ++i) {
+		for (int i = 0; i < encryptArr.length; ++i) {
 			encryptArr[i] = -1;
 		}
 		
 		fourSq = new byte[3][SQRT_ALPHABET_SIZE][SQRT_ALPHABET_SIZE];
 		
 		sqChars = new char[fullSqSize][fullSqSize];
-		
-		
-		// initialize CipherProcessor and cores
-		cipherProcessor = new CipherProcessor(this);
 		
 		init(key);
 	}
@@ -323,23 +325,154 @@ public final class Cipher {
 	}
 	
 	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
-		/*
-		Settings:
+		CipherProcessor cipherProcessor = new CipherProcessor(fileName, encryptMode, readFromURL, writeToFile);
+		cipherProcessor.processFile();
+	}
+	
+	/**
+	 * Handles reading from file/url and writing to a file/console,
+	 * feeding all bytes through the parent Cipher object.
+	 */
+	private class CipherProcessor {
+		// settings
+		private String resourcePath;
+		private boolean encryptMode;
+		// Encrypt Mode
+		// True: Encrypt
+		// False: Decrypt
+		private boolean writeToFile;
+		// Write to File
+		// True: Write to File
+		// False: Write to Standard Out (the console)
+		private boolean readFromURL;
+		// Read from URL
+		// True: Read from URL
+		// False: Read from File
+		// how many bytes to be read into the buffer each time
+		// the value of 8192 seems most efficient
+		private static final int BUFFER_LEN = 8192;
+		private BufferedOutputStream out;
 		
-		encryptMode
-		True: Encrypt
-		False: Decrypt
+		public CipherProcessor(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) {
+			this.encryptMode = encryptMode;
+			this.resourcePath = resourcePath;
+			this.writeToFile = writeToFile;
+			this.readFromURL = readFromURL;
+		}
 		
-		writeToFile
-		True: Write to File
-		False: Write to Standard Out (the console)
+		/**
+		 * Running time: O(n)
+		 * Reasoning: A complex method, but overall since each byte is read,
+		 * dealt with, then written, it runs in O(n) time.
+		 * 
+		 * 
+		 * Space complexity: O(1)
+		 * Reasoning: Since the file is encrypted "on the fly" and not held in memory
+		 * all at once, this method should use approximately the same amount of space
+		 * regardless of file size.
+		 */
+		public void processFile() throws IOException {
+			// the input byte buffer
+			byte[] bufferBytes = new byte[BUFFER_LEN];
+			// keeps track of what the last byte read from the buffer was
+			int bytesRead;
+			
+			String inputFileName = new File(resourcePath).getName();
+			String fileOutputPath;
+			
+			InputStream inStream;
+			OutputStream outStream;
+			URL url;
+			
+			int i;
+			
+			if (readFromURL) {
+				url = new URL(resourcePath);
+				inStream = url.openStream();
+			}
+			else {
+				// read from file
+				inStream = new FileInputStream(resourcePath);
+			}
+			
+			if (writeToFile) {
+				// strip off the file extension, if there is one
+				if (inputFileName.contains(".")) {
+					inputFileName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
+				}
+				
+				// form the output path string
+				fileOutputPath = String.format("%s/output/%s%s.txt",
+						Menu.ROOT_DIR,
+						inputFileName,
+						(encryptMode ? "_enc" : "_dec"));
+				
+				outStream = new FileOutputStream(fileOutputPath);
+			}
+			else {
+				// write to standard out
+				outStream = System.out;
+			}
+			
+			BufferedInputStream in = new BufferedInputStream(inStream);
+			out = new BufferedOutputStream(outStream);
+			
+			long then;
+			long encNs = 0;
+			
+			// fill the buffer until no more bytes are available
+			while ((bytesRead = in.read(bufferBytes)) != -1) {
+				then = System.nanoTime();
+				
+				if (bytesRead % 2 != 0) {
+					// off number of bytes; add the buffer character (space)
+					bufferBytes[bytesRead++] = ' ';
+				}
+				
+				// convert all bytes in the buffer to "packed form"
+				for (i = 0; i < bytesRead; ++i) {
+					if (bufferBytes[i] < 0) {
+						// non ASCII character
+						bufferBytes[i] = qMarkIndex;
+					}
+					else {
+						bufferBytes[i] = PACKED_CHARS[bufferBytes[i]];
+					}
+				}
+				
+				// encrypt/decrypt byte pairs in place
+				for (i = 0; i < bytesRead; i += 2) {
+					if (encryptMode) {
+						encryptBigram(bufferBytes, i);
+					}
+					else {
+						decryptBigram(bufferBytes, i);
+					}
+				}
+				
+				// convert all bytes back to "unpacked" form (ASCII chars)
+				for (i = 0; i < bytesRead; ++i) {
+					bufferBytes[i] = UNPACKED_CHARS[bufferBytes[i]];
+				}
+				
+				encNs += System.nanoTime() - then;
+				
+				out.write(bufferBytes, 0, bytesRead);
+			}
+			
+			System.out.printf("Millisec spent encrypting/decrypting (without filo IO): %.2fms.%n%n", encNs / 1000000f);
+			
+			// close files etc.
+			in.close();
+			if (writeToFile) {
+				out.close();
+			}
+			else {
+				out.flush();
+				System.out.print("\n\n");
+			}
+		}
 		
-		readFromURL
-		True: Read from URL
-		False: Read from File
-		*/
-		
-		cipherProcessor.processFile(fileName, encryptMode, readFromURL, writeToFile);
 	}
 	
 }
