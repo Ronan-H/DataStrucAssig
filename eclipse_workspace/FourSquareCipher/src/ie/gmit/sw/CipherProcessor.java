@@ -95,28 +95,12 @@ public class CipherProcessor {
 				buffer[bytesRead++] = ' ';
 			}
 			
-			// convert all bytes in the buffer to "packed form"
-			for (i = 0; i < bytesRead; ++i) {
-				if (buffer[i] >> 7 == -1) { // checks if buffer[i] is negative
-					// non ASCII character
-					buffer[i] = Cipher.Q_MARK_INDEX;
-				}
-				else {
-					buffer[i] = Cipher.PACKED_CHARS[buffer[i]];
-				}
-			}
-			
 			// encrypt/decrypt byte pairs in place
 			if (encryptMode) {
 				cipher.encryptAll(buffer, bytesRead);
 			}
 			else {
 				cipher.decryptAll(buffer, bytesRead);
-			}
-			
-			// convert all bytes back to "unpacked" form (ASCII chars)
-			for (i = 0; i < bytesRead; ++i) {
-				buffer[i] = Cipher.UNPACKED_CHARS[buffer[i]];
 			}
 			
 			out.write(buffer, 0, bytesRead);

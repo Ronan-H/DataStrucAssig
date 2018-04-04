@@ -28,7 +28,7 @@ public final class Cipher {
 	// should be ceil(log2(ALPBHABET_SIZE))
 	private static final byte packedBits = 7;
 	
-	public static final byte Q_MARK_INDEX = (byte)ALPHABET_STRING.indexOf('?'); 
+	public static final byte UNKNOWN_PLACEHOLDER = '?'; 
 	
 	private final String key;
 	// 3d array (3x 2 dim), containing the characters in the four squares,
@@ -72,7 +72,7 @@ public final class Cipher {
 		short i;
 		
 		for (i = 0; i < PACKED_CHARS.length; ++i) {
-			PACKED_CHARS[i] = Q_MARK_INDEX;
+			PACKED_CHARS[i] = UNKNOWN_PLACEHOLDER;
 		}
 		
 		for (i = 0; i < ALPHABET_SIZE; ++i) {
@@ -220,64 +220,44 @@ public final class Cipher {
 		return new String(key);
 	}
 	
-	/**
-	 * NOTE: Functions identically to decryptChars()
-	 * 
-	 * Running time: O(1)
-	 * Reasoning: Exact same process regardless of what a or b are.
-	 * Always uses 3 array lookups, each running in constant time.
-	 * 
-	 * Space complexity: O(1)
-	 * Reasoning: (2 + 2) = ~4 bytes
-	 */
-	public void encryptBigram(byte[] array, int index) {
-		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = encryptArr[array[index] << packedBits | array[index + 1]];
-		
-		// separate the 2x 6 bit numbers back out, again with bit shifts
-		array[index] = (byte)(combinedResult >> packedBits);
-		array[index + 1] = (byte)(combinedResult & 0x7F);
-	}
-	
 	public void encryptAll(byte[] array, int limit) {
-		for (int i = 0; i < limit; i += 2) {
-			// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-			short combinedResult = encryptArr[array[i] << packedBits | array[i + 1]];
+		int i;
+		short combinedResult;
+		
+		for (i = 0; i < limit; i += 2) {
+			try {
+				// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
+				combinedResult = encryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
+			} catch(ArrayIndexOutOfBoundsException e) {
+				if (array[i] >> 7 == -1) {
+					array[i] = UNKNOWN_PLACEHOLDER;
+				}
+				
+				if (array[i + 1] >> 7 == -1) {
+					array[i + 1] = UNKNOWN_PLACEHOLDER;
+				}
+				
+				combinedResult = encryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
+			}
 			
 			// separate the 2x 6 bit numbers back out, again with bit shifts
-			array[i] = (byte)(combinedResult >> packedBits);
-			array[i + 1] = (byte)(combinedResult & 0x7F);
+			array[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
+			array[i + 1] = UNPACKED_CHARS[(combinedResult & 0x7F)];
 		}
 	}
 	
 	public void decryptAll(byte[] array, int limit) {
-		for (int i = 0; i < limit; i += 2) {
+		int i;
+		short combinedResult;
+		
+		for (i = 0; i < limit; i += 2) {
 			// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-			short combinedResult = decryptArr[array[i] << packedBits | array[i + 1]];
+			combinedResult = decryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
 			
 			// separate the 2x 6 bit numbers back out, again with bit shifts
-			array[i] = (byte)(combinedResult >> packedBits);
-			array[i + 1] = (byte)(combinedResult & 0x7F);
+			array[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
+			array[i + 1] = UNPACKED_CHARS[(combinedResult & 0x7F)];
 		}
-	}
-	
-	/**
-	 * NOTE: Functions identically to encryptChars()
-	 * 
-	 * Running time: O(1)
-	 * Reasoning: Exact same process regardless of what a or b are.
-	 * Always uses 3 array lookups, each running in constant time.
-	 * 
-	 * Space complexity: O(1)
-	 * Reasoning: (2 + 2) = ~4 bytes
-	 */
-	public void decryptBigram(byte[] array, int index) {
-		// use bit shifts to store 2x 6 bit numbers as a single short, then use the lookup table
-		short combinedResult = decryptArr[array[index] << packedBits | array[index + 1]];
-		
-		// separate the 6 bit number back out, again with bit shifts
-		array[index] = (byte)(combinedResult >> packedBits);
-		array[index + 1] = (byte)(combinedResult & 0x7F);
 	}
 	
 	public void printKey() {
