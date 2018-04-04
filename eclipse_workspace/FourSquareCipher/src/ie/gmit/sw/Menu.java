@@ -45,16 +45,18 @@ public final class Menu {
 		JFileChooser fileChooser = new JFileChooser();
 		FileFilter fileFilter = new FileNameExtensionFilter("Text files", "txt");
 		
+		long timerStart;
+		double msTaken;
+		
 		fileChooser.setAcceptAllFileFilterUsed(false);
 		fileChooser.setFileFilter(fileFilter);
 		fileChooser.setDialogTitle("Select an input file");
 		
 		out.println();
 		out.println(" ==============================");
-		out.println(" |  Rapid Four Square Cipher  |");
+		out.println(" |     Four Square Cipher     |");
 		out.println(" |      By Ronan Hanley       |");
 		out.println(" ==============================");
-		out.println();
 		
 		/* Get a key for the cipher and initialize it right away, since the
 		 * application is useless without one.
@@ -62,8 +64,7 @@ public final class Menu {
 		cipher = initCipher();
 		
 		while (running) {
-			out.println("What would you like to do?");
-			choice = getUserOption("Encrypt", "Decrypt", "Change the key", "Print the cipher's four squares", "Exit");
+			choice = getUserOption("Encrypt", "Decrypt", "Change the key", "Print cipher key & four squares", "Exit");
 			
 			switch (choice) {
 			case 1:
@@ -71,8 +72,7 @@ public final class Menu {
 				// Encrypt/Decrypt
 				encryptMode = (choice == 1);
 				
-				out.println("Read from a file or a URL?");
-				readFromURL = (getUserOption("File", "URL") == 2);
+				readFromURL = (getUserOption("Read from a file", "Read from a URL") == 2);
 				
 				if (readFromURL) {
 					// read from url
@@ -124,15 +124,17 @@ public final class Menu {
 					}
 				}
 				
-				out.println("Print output to console or a file?");
-				writeToFile = (getUserOption("Output to console", "Output to a file") == 2);
+				writeToFile = (getUserOption("Print output to a file", "Print output to the console") == 1);
 				
 				if (writeToFile) out.println("(file will be written to the \"output\" folder of this project)\n");
 				
-				long timerStart = System.nanoTime();
+				System.out.printf("%s file...%n", (encryptMode ? "Encrypting" : "Decrypting"));
+				timerStart = System.nanoTime();
 				try {
 					cipher.processFile(resourcePath, encryptMode, readFromURL, writeToFile);
-					out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
+					msTaken = (System.nanoTime() - timerStart) / 1000000f;
+					System.out.println("\nFinished.\n");
+					out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", msTaken);
 				}
 				catch (FileNotFoundException e) {
 					System.err.println("Error while processing file:\n");
@@ -151,8 +153,10 @@ public final class Menu {
 				cipher = initCipher();
 				break;
 			case 4:
-				// Print the cipher's four squares
+				// Print cipher key & four squares
+				cipher.printKey();
 				cipher.printSquares();
+				System.out.println("\n\n(new lines are represented as the character \'^\')");
 				break;
 			case 5:
 				// Exit
@@ -210,8 +214,7 @@ public final class Menu {
 		Cipher cipher;
 		long timerStart;
 		
-		out.println("Choose a source for the cipher key");
-		choice = getUserOption("Randomly generate a key for me", "Let me enter the key");
+		choice = getUserOption("Randomly generate the cipher key", "Let me enter the cipher key");
 		
 		switch (choice) {
 		case 1:
@@ -221,9 +224,6 @@ public final class Menu {
 		case 2:
 			// get key by user input
 			out.println("Use one key or two?");
-			out.printf("\t(One key max length: %d%n", Cipher.ALPHABET_SIZE);
-			out.printf("\t Two keys max length each: %d%n", Cipher.ALPHABET_SIZE /2);
-			out.println("\t smaller keys will be automatically padded)");
 			
 			numKeys = getUserOption("I want one key", "I want to enter two keys");
 			
@@ -238,8 +238,7 @@ public final class Menu {
 		out.println("Initializing cipher...");
 		timerStart = System.nanoTime();
 		cipher = new Cipher(key);
-		out.printf("Cipher initialized in: %.2fms.%n%n", (System.nanoTime() - timerStart) / 1000000f);
-		cipher.printKey();
+		out.printf("Cipher initialized in: %.2fms.%n", (System.nanoTime() - timerStart) / 1000000f);
 		
 		return cipher;
 	}
