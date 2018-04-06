@@ -1,8 +1,14 @@
 package ie.gmit.sw;
 import static ie.gmit.sw.Cipher.*;
 
+/**
+ * Converts any input from the user into a usable key for
+ * the Cipher.
+ */
 public final class KeySanitizer {
+	// the (possibly invalid) input key(s)
 	private StringBuilder[] inputKeys;
+	// holds the output "sanitized" key
 	private String sanitizedKey = null;
 	
 	public KeySanitizer(StringBuilder[] inputKeys) {
@@ -26,11 +32,11 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Sanitizes the input keys in 3 distinct steps.
+	 * Sanitizes the input keys in 4 distinct steps.
 	 * 
 	 * The outputted key is guaranteed to be in the correct format to
 	 * be used in the four square cipher, regardless of what the input
-	 * key(s) are.
+	 * key(s) are (for as much as I've tested it, anyway).
 	 */
 	private void sanitizeKeys() {
 		// Step 1: Spill any additional chars from key 1 to key 2
@@ -51,14 +57,16 @@ public final class KeySanitizer {
 	/**
 	 * Running time: O(n)?
 	 * Reasoning: Depends on the running time of StringBuilder.append(), which
-	 * might be O(n).
+	 * might be O(n), since it has n characters to append. Otherwise, O(1).
 	 * 
 	 * Space complexity: 0
 	 * Reasoning: No extra variables.
 	 */
 	private void equalizeKeys() {
 		if (inputKeys[0].length() > ALPHABET_SIZE) {
+			// append any extra characters to the second key
 			inputKeys[1].append(inputKeys[0].substring(ALPHABET_SIZE));
+			// remove those appended characters from the first key
 			inputKeys[0].delete(ALPHABET_SIZE, inputKeys[0].length());
 		}
 	}
@@ -75,23 +83,34 @@ public final class KeySanitizer {
 	 */
 	private void removeUnsupportedChars() {
 		int i, j;
-		int packedChar;
 		char c;
 		
+		// loop through all chars in both keys
 		for (i = 0; i < 2; ++i) {
 			for (j = 0; j < inputKeys[i].length(); ++j) {
 				c = inputKeys[i].charAt(j);
-				packedChar = (c < 0 || c > 127 ? -1 : PACKED_CHARS[(int) c]);
+				boolean unsupported = c < 0 || c > 127 || PACKED_CHARS[(int) c] == UNKNOWN_PLACEHOLDER_PACKED;
 				
-				if (packedChar == -1) {
-					// unsupported character
+				if (unsupported) {
+					// unsupported character; delete it
 					inputKeys[i].deleteCharAt(j);
+					// move j back one since all chars were shuffled back 1
 					--j;
 				}
 			}
 		}
 	}
 	
+	/**
+	 * Running time: O(n^2)
+	 * Reasoning: Compares every char in each key to every other
+	 * char, giving n^2.
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
+	 * Just a few extra variables whose size remains the same when the
+	 * input changes.
+	 */
 	private void removeDuplicateChar() {
 		int i, j, k;
 		StringBuilder inputKey;
@@ -100,11 +119,13 @@ public final class KeySanitizer {
 			inputKey = inputKeys[i];
 			for (j = 0; j < inputKey.length(); ++j) {
 				for (k = 0; k < inputKey.length(); ++k) {
+					// char isn't be a duplicate of itself
 					if (k == j) continue;
 					
 					if (inputKey.charAt(k) == inputKey.charAt(j)) {
 						// duplicate character found
 						inputKey.deleteCharAt(k);
+						// move k back one since all chars were shuffled back 1
 						--k;
 					}
 				}
@@ -112,6 +133,16 @@ public final class KeySanitizer {
 		}
 	}
 	
+	/**
+	 * Running time: O(n^2)
+	 * Reasoning: Loops through the alphabet and searches the key
+	 * each time for that character, giving n^2.
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
+	 * Just a few extra variables whose size remains the same when the
+	 * input changes.
+	 */
 	private void addPadding() {
 		int i, j, k;
 		StringBuilder inputKey;
@@ -123,10 +154,11 @@ public final class KeySanitizer {
 			for (j = 0; j < UNPACKED_CHARS.length && inputKey.length() < ALPHABET_SIZE; ++j) {
 				c = (char)UNPACKED_CHARS[j];
 				for (k = 0; k < inputKey.length(); ++k) {
+					// char already included in the key; no need to add it
 					if (inputKey.charAt(k) == c) continue outerLoop;
 				}
 				
-				// character not found; append it to the key
+				// character not found in the key; append it
 				inputKey.append(c);
 			}
 		}

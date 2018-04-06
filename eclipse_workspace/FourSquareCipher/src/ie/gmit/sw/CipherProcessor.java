@@ -1,7 +1,5 @@
 package ie.gmit.sw;
 
-import static java.lang.System.out;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -14,12 +12,14 @@ import java.net.URL;
 
 /**
  * Handles reading from file/url and writing to a file/console,
- * feeding all bytes through the parent Cipher object.
+ * feeding all bytes through the Cipher object.
  */
 public class CipherProcessor {
+	// number of bytes to be used in the byte buffer
 	private static final int BUFFER_LEN = 8192;
 	// the input byte buffer
 	private byte[] buffer;
+	// the cipher object to use for encryption/decryption
 	private Cipher cipher;
 	
 	public CipherProcessor(Cipher cipher) {
@@ -30,32 +30,33 @@ public class CipherProcessor {
 	/**
 	 * Running time: O(n)
 	 * Reasoning: A complex method, but overall since each byte is read,
-	 * dealt with, then written, it runs in O(n) time.
-	 * 
+	 * dealt with in O(1) time, then written, it runs in O(n) time.
 	 * 
 	 * Space complexity: O(1)
 	 * Reasoning: Since the file is encrypted "on the fly" and not held in memory
 	 * all at once, this method should use approximately the same amount of space
 	 * regardless of file size.
 	 * 
-	 * @param resourcePath Patht to the resource file/URL
+	 * @param resourcePath Path to the resource file/URL
 	 * @param encryptMode true for encrypt, false for decrypt
 	 * @param readFromURL true to read from URL, false to read from file
 	 * @param writeToFile true to write to file, false to write to console
-	 * @throws IOException
 	 */
-	public void processFile(String resourcePath, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
-		// keeps track of what the last byte read from the buffer was
+	public void processFile(String resourcePath,
+							boolean encryptMode,
+							boolean readFromURL,
+							boolean writeToFile)
+								throws IOException {
+		// number of bytes that were read into the buffer
 		int bytesRead;
 		
 		String inputFileName = new File(resourcePath).getName();
+		// full path to the output file
 		String fileOutputPath;
 		
 		InputStream inStream;
 		OutputStream outStream;
 		URL url;
-		
-		int i;
 		
 		if (readFromURL) {
 			url = new URL(resourcePath);
@@ -73,8 +74,7 @@ public class CipherProcessor {
 			}
 			
 			// form the output path string
-			fileOutputPath = String.format("%s/output/%s%s.txt",
-					Menu.ROOT_DIR,
+			fileOutputPath = String.format("./output/%s%s.txt",
 					inputFileName,
 					(encryptMode ? "_enc" : "_dec"));
 			
@@ -103,6 +103,7 @@ public class CipherProcessor {
 				cipher.decryptAll(buffer, bytesRead);
 			}
 			
+			// write the buffer
 			out.write(buffer, 0, bytesRead);
 		}
 		
