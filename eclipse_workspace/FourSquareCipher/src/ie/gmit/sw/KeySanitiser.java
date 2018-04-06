@@ -5,21 +5,21 @@ import static ie.gmit.sw.Cipher.*;
  * Converts any input from the user into a usable key for
  * the Cipher.
  */
-public final class KeySanitizer {
+public final class KeySanitiser {
 	// the (possibly invalid) input key(s)
 	private StringBuilder[] inputKeys;
-	// holds the output "sanitized" key
+	// holds the output "sanitised" key
 	private String sanitizedKey = null;
 	
-	public KeySanitizer(StringBuilder[] inputKeys) {
+	public KeySanitiser(StringBuilder[] inputKeys) {
 		this.inputKeys = inputKeys;
 		if (this.inputKeys[1] == null) this.inputKeys[1] = new StringBuilder(ALPHABET_SIZE);
 	}
 	
 	/**
-	 * First sanitizes the input keys if they haven't been already,
-	 * then returns the "clean" key.
-	 * 
+	 * First sanitises the input keys if they haven't been already,
+	 * then returns the "clean" key.<br>
+	 * <br>
 	 * This works similar to the singleton design pattern.
 	 * @return A "clean" key, ready to be used in a four square cipher.
 	 */
@@ -32,11 +32,11 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Sanitizes the input keys in 4 distinct steps.
-	 * 
+	 * Sanitises the input keys in 4 distinct steps.<br>
+	 * <br>
 	 * The outputted key is guaranteed to be in the correct format to
 	 * be used in the four square cipher, regardless of what the input
-	 * key(s) are (for as much as I've tested it, anyway).
+	 * key(s) are (for as much as I've tested it, anyway).<br>
 	 */
 	private void sanitizeKeys() {
 		// Step 1: Spill any additional chars from key 1 to key 2
@@ -55,11 +55,11 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Running time: O(n)?
+	 * Running time: O(n)?<br>
 	 * Reasoning: Depends on the running time of StringBuilder.append(), which
-	 * might be O(n), since it has n characters to append. Otherwise, O(1).
-	 * 
-	 * Space complexity: 0
+	 * might be O(n), since it has n characters to append. Otherwise, O(1).<br>
+	 * <br>
+	 * Space complexity: 0<br>
 	 * Reasoning: No extra variables.
 	 */
 	private void equalizeKeys() {
@@ -72,12 +72,12 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Running time: O(n)
+	 * Running time: O(n)<br>
 	 * Reasoning: Running time is proportional time to the size of the
-	 * input key.
-	 * 
-	 * Space complexity: 0
-	 * Reasoning: O(1)
+	 * input key.<br>
+	 * <br>
+	 * Space complexity: 0<br>
+	 * Reasoning: O(1)<br>
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */
@@ -102,12 +102,12 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Running time: O(n^2)
+	 * Running time: O(n^2)<br>
 	 * Reasoning: Compares every char in each key to every other
-	 * char, giving n^2.
-	 * 
-	 * Space complexity: 0
-	 * Reasoning: O(1)
+	 * char, giving n^2.<br>
+	 * <br>
+	 * Space complexity: 0<br>
+	 * Reasoning: O(1)<br>
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */
@@ -134,12 +134,12 @@ public final class KeySanitizer {
 	}
 	
 	/**
-	 * Running time: O(n^2)
+	 * Running time: O(n^2)<br>
 	 * Reasoning: Loops through the alphabet and searches the key
 	 * each time for that character, giving n^2.
-	 * 
-	 * Space complexity: 0
-	 * Reasoning: O(1)
+	 * <br>
+	 * Space complexity: 0<br>
+	 * Reasoning: O(1)<br>
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */

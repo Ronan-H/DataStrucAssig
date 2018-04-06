@@ -28,6 +28,9 @@ public final class Menu {
 		console = new Scanner(System.in);
 	}
 	
+	/**
+	 * (too complicated for Big O)
+	 */
 	public void go() {
 		running = true;
 		
@@ -45,11 +48,10 @@ public final class Menu {
 		long timerStart;
 		double msTaken;
 		
-		// (this anonymous inner class taken from StackOverflow in an attempt to ensure
-		// the file chooser appears on top of all other windows)
+		// (this anonymous inner class taken from StackOverflow in an attempt to
+		// ensure the file chooser appears on top of all other windows)
 		JFileChooser fileChooser = new JFileChooser() {
 			private static final long serialVersionUID = 1L;
-			
 			@Override
 			protected JDialog createDialog(Component parent) throws HeadlessException {
 				JDialog dialog = super.createDialog(parent);
@@ -58,7 +60,7 @@ public final class Menu {
 				return dialog;
 			}
 		};
-		// ---
+		// -----
 		
 		// only show text files to the user when they are selecting an input file
 		FileFilter fileFilter = new FileNameExtensionFilter("Text files", "txt");
@@ -150,7 +152,11 @@ public final class Menu {
 				
 				writeToFile = (getUserOption("Print output to a file", "Print output to the console") == 1);
 				
-				if (writeToFile) out.println("(file will be written to the \"output\" folder of this project)\n");
+				if (writeToFile) {
+					// let the user know where the output file will go
+					out.printf("(file will be written to the \"output\" folder of this project, with the extension %s appended)%n%n",
+								(encryptMode ? "_enc" : "_dec"));
+				}
 				
 				System.out.printf("%s file...%n", (encryptMode ? "Encrypting" : "Decrypting"));
 				// start the timer to measure how long encryption/decryption takes
@@ -191,15 +197,15 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: O(n)
+	 * Running time: O(n)<br>
 	 * Reasoning: Runtime grows with how many options there are to print.
-	 * 
-	 * Space complexity: O(1)
+	 * <br><br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Some extra variables.
-	 * 
-	 * 
-	 * 
-	 * Prints a list of options to the screen, along with their option number.
+	 * <br><br>
+	 * <br>
+	 * <br>
+	 * Prints a list of options to the screen, along with their option number.<br>
 	 * Returns the user's validated option choice.
 	 */
 	private int getUserOption(String...options) {
@@ -218,14 +224,14 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: Unknown
-	 * Reasoning: Depends on how many times the user enters invalid input.
-	 * 
-	 * Space complexity: O(1)
-	 * Reasoning: Some extra variables.
-	 * 
-	 * 
-	 * 
+	 * Running time: Unknown<br>
+	 * Reasoning: Depends on how many times the user enters invalid input.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
+	 * Reasoning: Some extra variables.<br>
+	 * <br>
+	 * <br>
+	 * <br>
 	 * Repetitively asks the user between min and max until they supply it.
 	 */
 	private int getValidatedInt(int min, int max) {
@@ -238,6 +244,7 @@ public final class Menu {
 				input = Integer.parseInt(console.nextLine());
 				valid = (input >= min && input <= max);
 			} catch(NumberFormatException e) {
+				// input wasn't a number
 				valid = false;
 			}
 			
@@ -253,15 +260,15 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: O(1)
-	 * Reasoning: No loops.
-	 * 
-	 * Space complexity: O(1)
-	 * Reasoning: Some extra variables.
-	 * 
-	 * 
-	 * 
-	 * Initializes the Cipher based on user input.
+	 * Running time: O(1)<br>
+	 * Reasoning: No loops.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
+	 * Reasoning: Some extra variables.<br>
+	 * <br>
+	 * <br>
+	 * <br>
+	 * Initialises the Cipher based on user input.
 	 */
 	private Cipher initCipher() {
 		int i;
@@ -293,7 +300,7 @@ public final class Menu {
 			System.out.println();
 			
 			// convert whatever the user entered into a derived usable Cipher key
-			key = new KeySanitizer(inputKeys).getSanitizedKey();
+			key = new KeySanitiser(inputKeys).getSanitizedKey();
 		}
 		
 		// create the Cipher object and time how long the initialisation takes

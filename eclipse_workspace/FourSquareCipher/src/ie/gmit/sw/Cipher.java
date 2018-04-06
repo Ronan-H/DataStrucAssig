@@ -10,7 +10,7 @@ import java.util.Random;
 /**
  * Everything to do with the cipher. Holds information about the alphabet
  * being used, the key, the lookup tables for encryption/decryption, etc.
- * 
+ * <br><br>
  * Also includes various methods including encrypting/decrypting batches of
  * characters at once.
  */
@@ -57,14 +57,14 @@ public final class Cipher {
 	private CipherProcessor cipherProcessor;
 	
 	/**
-	 * Running time: O(n)
-	 * Reasoning: Runtime proportional to ALPHABET_SIZE.
-	 * 
-	 * Space complexity: ~209 bytes
-	 * Reasoning: 128 + 81 bytes; for the pack and unpack arrays.
-	 * 
-	 * 
-	 * 
+	 * Running time: O(n)<br>
+	 * Reasoning: Runtime proportional to ALPHABET_SIZE.<br>
+	 * <br>
+	 * Space complexity: ~209 bytes<br>
+	 * Reasoning: 128 + 81 bytes; for the pack and unpack arrays.<br>
+	 * <br>
+	 * <br>
+	 * <br>
 	 * Initialises the lookup tables to convert a normal Java char to a "packed char",
 	 * and back again.
 	 */
@@ -101,12 +101,12 @@ public final class Cipher {
 	}
 	
 	/**
-	 * (Not including method calls for the Big O)
-	 * 
-	 * Running time: O(1)
-	 * Reasoning: Just initialising variables.
-	 * 
-	 * Space complexity: O(n^2)
+	 * (Not including method calls for the Big O)<br>
+	 * <br>
+	 * Running time: O(1)<br>
+	 * Reasoning: Just initialising variables.<br>
+	 * <br>
+	 * Space complexity: O(n^2)<br>
 	 * Reasoning: The lookup tables must hold every permutation of 2 characters
 	 * from the alphabet. This is n * n characters, or n^2.
 	 */
@@ -116,8 +116,8 @@ public final class Cipher {
 		// must initialise these arrays here instead of in init() as they are marked final
 		final int fullSqSize = 2 * SQRT_ALPHABET_SIZE;
 		
-		// lookup tables need to house every permutation of 2x packedBits bit numbers
-		final int ENCDEC_TABLE_SIZE = (packedBitsMax << packedBits | packedBitsMax) + 1;
+		// lookup tables need to house every permutation of 2x numbers of max size ALPHABET_SIZE
+		final int ENCDEC_TABLE_SIZE = ((ALPHABET_SIZE - 1) << packedBits | ALPHABET_SIZE);
 		encryptArr = new short[ENCDEC_TABLE_SIZE];
 		decryptArr = new short[ENCDEC_TABLE_SIZE];
 		
@@ -130,13 +130,13 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n^4)
+	 * Running time: O(n^4)<br>
 	 * Reasoning: At one point this method pairs every character in a 2d array
 	 * with every other character in that array, making it O(n^4) (where 'n' is
 	 * SQRT_ALPHABET_SIZE). You could also say it's every permutation of 4
-	 * characters, n*n*n*n = n^4.
-	 * 
-	 * Space complexity: O(1)
+	 * characters, n*n*n*n = n^4.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Some extra variables.
 	 */
 	private void init(String key) {
@@ -239,11 +239,11 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n)
+	 * Running time: O(n)<br>
 	 * Reasoning: Scales with ALPHABET_SIZE (for every character in the alphabet,
-	 * it needs to be added and later plucked out at random)
-	 * 
-	 * Space complexity: O(n)
+	 * it needs to be added and later plucked out at random)<br>
+	 * <br>
+	 * Space complexity: O(n)<br>
 	 * Reasoning: Same reasoning as above.
 	 */
 	public static String generateRandomKey() {
@@ -271,19 +271,19 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n)
+	 * Running time: O(n)<br>
 	 * Reasoning: A single bigram is encrypted in O(1) time (ie. just bit shifts,
 	 * array accesses, if statements etc.) but since we're encrypting an array of n
-	 * bytes, the running time will scale O(n).
-	 * 
-	 * Space complexity: O(1)
+	 * bytes, the running time will scale O(n).<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Conversions are done in place, so the only extra memory taken up
-	 * is for a few variables.
-	 * 
-	 * @param array The array of bytes to encrypt
+	 * is for a few variables.<br>
+	 * <br>
+	 * @param buffer The array of bytes to encrypt
 	 * @param limit How much of the array to encrypt
 	 */
-	public void encryptAll(byte[] array, int limit) {
+	public void encryptAll(byte[] buffer, int limit) {
 		int i;
 		short combinedResult;
 		
@@ -291,7 +291,7 @@ public final class Cipher {
 		for (i = 0; i < limit; i += 2) {
 			try {
 				// use bit shifts to store 2 characters in 1 short, then use the lookup table
-				combinedResult = encryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
+				combinedResult = encryptArr[PACKED_CHARS[buffer[i]] << packedBits | PACKED_CHARS[buffer[i + 1]]];
 			} catch(ArrayIndexOutOfBoundsException e) {
 				// Bigram contains a non-ASCII character.
 				// Using a try catch like this is faster than fixing it beforehand
@@ -302,42 +302,42 @@ public final class Cipher {
 				// probably shouldn't be used anyway since all those characters would be replaced
 				// by question marks.
 				
-				if (array[i] >> 7 == -1) {
+				if (buffer[i] >> 7 == -1) {
 					// non-ASCII; convert to UNKNOWN_PLACEHOLDER
-					array[i] = UNKNOWN_PLACEHOLDER;
+					buffer[i] = UNKNOWN_PLACEHOLDER;
 				}
 				
-				if (array[i + 1] >> 7 == -1) {
+				if (buffer[i + 1] >> 7 == -1) {
 					// non-ASCII; convert to UNKNOWN_PLACEHOLDER
-					array[i + 1] = UNKNOWN_PLACEHOLDER;
+					buffer[i + 1] = UNKNOWN_PLACEHOLDER;
 				}
 				
 				// now that the non-ASCII characters are replaced with placeholders, encrypt again
-				combinedResult = encryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
+				combinedResult = encryptArr[PACKED_CHARS[buffer[i]] << packedBits | PACKED_CHARS[buffer[i + 1]]];
 			}
 			
 			// use bit shifts to get the 2 characters back out of the single short value
-			array[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
-			array[i + 1] = UNPACKED_CHARS[(combinedResult & packedBitsMax)];
+			buffer[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
+			buffer[i + 1] = UNPACKED_CHARS[(combinedResult & packedBitsMax)];
 		}
 	}
 	
 	/**
-	 * (same as above)
-	 * 
-	 * Running time: O(n)
+	 * <i>(same as above)</i><br>
+	 * <br>
+	 * Running time: O(n)<br>
 	 * Reasoning: A single bigram is decrypted in O(1) time (ie. just bit shifts,
 	 * array accesses, if statements etc.) but since we're decrypting an array of n
-	 * bytes, the running time will scale O(n).
-	 * 
-	 * Space complexity: O(1)
+	 * bytes, the running time will scale O(n).<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Conversions are done in place, so the only extra memory taken up
-	 * is for a few variables.
-	 * 
-	 * @param array The array of bytes to encrypt
+	 * is for a few variables.<br>
+	 * <br>
+	 * @param buffer The array of bytes to encrypt
 	 * @param limit How much of the array to encrypt
 	 */
-	public void decryptAll(byte[] array, int limit) {
+	public void decryptAll(byte[] buffer, int limit) {
 		int i;
 		short combinedResult;
 		
@@ -347,19 +347,19 @@ public final class Cipher {
 			// encrypting were thrown out.
 			
 			// use bit shifts to store 2 characters in 1 short, then use the lookup table
-			combinedResult = decryptArr[PACKED_CHARS[array[i]] << packedBits | PACKED_CHARS[array[i + 1]]];
+			combinedResult = decryptArr[PACKED_CHARS[buffer[i]] << packedBits | PACKED_CHARS[buffer[i + 1]]];
 			
 			// use bit shifts to get the 2 characters back out of the single short value
-			array[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
-			array[i + 1] = UNPACKED_CHARS[(combinedResult & packedBitsMax)];
+			buffer[i] = UNPACKED_CHARS[(combinedResult >> packedBits)];
+			buffer[i + 1] = UNPACKED_CHARS[(combinedResult & packedBitsMax)];
 		}
 	}
 	
 	/**
-	 * Running time: O(n)
-	 * Reasoning: n characters to be printed.
-	 * 
-	 * Space complexity: O(1)
+	 * Running time: O(n)<br>
+	 * Reasoning: n characters to be printed.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Some extra variables.
 	 */
 	public void printKey() {
@@ -371,6 +371,8 @@ public final class Cipher {
 		for (i = 0; i < key.length(); ++i) {
 			c = key.charAt(i);
 			
+			// don't print newlines as newlines
+			// should use a placeholder character, '^'
 			if (c == '\n') {
 				out.print("^");
 			}
@@ -383,16 +385,16 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n^2), where 'n' is the length of the square
+	 * Running time: O(n^2), where 'n' is the length of the square<br>
 	 * Reasoning: Prints a square of chars, side size n. A squares area
-	 * obviously grows by it's length, squared.
-	 * 
-	 * Space complexity: O(1)
-	 * Reasoning: Some extra variables.
-	 * 
-	 * 
-	 * 
-	 * Prints the 4 squares from the cipher in ASCII form.
+	 * obviously grows by it's length, squared.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
+	 * Reasoning: Some extra variables.<br>
+	 * <br>
+	 * <br>
+	 * <br>
+	 * Prints the 4 squares from the cipher in ASCII form.<br>
 	 * Top left/bottom right squares are the alphabet, top right
 	 * and bottom left squares are the two key parts, as in the PDF.
 	 */
@@ -405,6 +407,8 @@ public final class Cipher {
 			// print the alphabet/key characters
 			for (c = 0; c < sqChars[r].length; ++c) {
 				sqc = sqChars[r][c];
+				// don't print newlines as newlines
+				// should use a placeholder character, '^'
 				if (sqc == '\n') {
 					out.print("^ ");
 				}
@@ -420,7 +424,7 @@ public final class Cipher {
 			out.println();
 			
 			if (r == sqChars.length / 2 - 1) {
-				// print the middle line going accross
+				// print the middle line going across
 				for (i = 0; i < (sqChars[r].length + 1) * 2; ++i) {
 					if (i == sqChars[r].length + 1) {
 						out.print("+");
@@ -435,9 +439,7 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Just calls another object's; see that method for Big O details.
-	 * 
-	 * <br><br>{@link ie.gmit.sw.CipherProcessor#processFile(fileName, encryptMode, readFromURL, writeToFile) Called method}
+	 * Just calls another object's; see that method for Big O details.<br>
 	 */
 	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
 		cipherProcessor.processFile(fileName, encryptMode, readFromURL, writeToFile);

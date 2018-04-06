@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import java.net.URL;
 
 /**
- * Handles reading from file/url and writing to a file/console,
+ * Handles reading from file/URL and writing to a file/console,
  * feeding all bytes through the Cipher object.
  */
 public class CipherProcessor {
@@ -28,15 +28,15 @@ public class CipherProcessor {
 	}
 	
 	/**
-	 * Running time: O(n)
+	 * Running time: O(n)<br>
 	 * Reasoning: A complex method, but overall since each byte is read,
-	 * dealt with in O(1) time, then written, it runs in O(n) time.
-	 * 
-	 * Space complexity: O(1)
+	 * dealt with in O(1) time, then written, it runs in O(n) time.<br>
+	 * <br>
+	 * Space complexity: O(1)<br>
 	 * Reasoning: Since the file is encrypted "on the fly" and not held in memory
 	 * all at once, this method should use approximately the same amount of space
-	 * regardless of file size.
-	 * 
+	 * regardless of file size.<br>
+	 * <br>
 	 * @param resourcePath Path to the resource file/URL
 	 * @param encryptMode true for encrypt, false for decrypt
 	 * @param readFromURL true to read from URL, false to read from file
