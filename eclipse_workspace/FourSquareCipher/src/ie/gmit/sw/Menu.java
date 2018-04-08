@@ -140,12 +140,12 @@ public final class Menu {
 					
 					// ensure the file exists, and the user has permission to write to it
 					if (!resource.exists()) {
-						System.out.println("Selected file does not exist!\n");
+						out.println("Selected file does not exist!\n");
 						continue;
 					}
 					
 					if (!resource.canWrite()) {
-						System.out.println("Insufficient permissions to write to chosen file!\n");
+						out.println("Insufficient permissions to write to chosen file!\n");
 						continue;
 					}
 				}
@@ -158,25 +158,27 @@ public final class Menu {
 								(encryptMode ? "_enc" : "_dec"));
 				}
 				
-				System.out.printf("%s file...%n", (encryptMode ? "Encrypting" : "Decrypting"));
+				out.printf("%s data...%n%s",
+							(encryptMode ? "Encrypting" : "Decrypting"),
+							(writeToFile ? "" : "\n")); // make some more space if we're writing to the console
 				// start the timer to measure how long encryption/decryption takes
 				timerStart = System.nanoTime();
 				try {
 					cipher.processFile(resourcePath, encryptMode, readFromURL, writeToFile);
 					msTaken = (System.nanoTime() - timerStart) / 1000000f;
-					System.out.println("\nFinished.\n");
+					out.println("\nFinished.\n");
 					out.printf("Contents read, encrypted, and written in: %.2fms.%n%n", msTaken);
 				}
 				catch (FileNotFoundException e) {
 					System.err.println("Error while processing file:\n");
-					e.printStackTrace();
+					e.printStackTrace(System.out);
 				}
 				catch (UnknownHostException e) {
 					out.printf("Unknown host \"%s\"%n%n", resourcePath);
 				}
 				catch (IOException e) {
 					System.err.print("Error occured while trying to process the input file/URL!\n\n");
-					e.printStackTrace();
+					e.printStackTrace(System.out);
 				}
 				break;
 			case 3:
@@ -187,7 +189,7 @@ public final class Menu {
 				// Print cipher key & four squares
 				cipher.printKey();
 				cipher.printSquares();
-				System.out.println("\n\n(new lines are represented as the character \'^\')");
+				out.println("\n\n(new lines are represented as the character \'^\')");
 				break;
 			case 5:
 				// Exit
@@ -197,15 +199,15 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
+	 * Running time: O(n)
 	 * Reasoning: Runtime grows with how many options there are to print.
-	 * <br><br>
-	 * Space complexity: O(1)<br>
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Some extra variables.
-	 * <br><br>
-	 * <br>
-	 * <br>
-	 * Prints a list of options to the screen, along with their option number.<br>
+	 * 
+	 * 
+	 * 
+	 * Prints a list of options to the screen, along with their option number.
 	 * Returns the user's validated option choice.
 	 */
 	private int getUserOption(String...options) {
@@ -224,14 +226,14 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: Unknown<br>
-	 * Reasoning: Depends on how many times the user enters invalid input.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
-	 * Reasoning: Some extra variables.<br>
-	 * <br>
-	 * <br>
-	 * <br>
+	 * Running time: Unknown
+	 * Reasoning: Depends on how many times the user enters invalid input.
+	 * 
+	 * Space complexity: O(1)
+	 * Reasoning: Some extra variables.
+	 * 
+	 * 
+	 * 
 	 * Repetitively asks the user between min and max until they supply it.
 	 */
 	private int getValidatedInt(int min, int max) {
@@ -260,14 +262,14 @@ public final class Menu {
 	}
 	
 	/**
-	 * Running time: O(1)<br>
-	 * Reasoning: No loops.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
-	 * Reasoning: Some extra variables.<br>
-	 * <br>
-	 * <br>
-	 * <br>
+	 * Running time: O(1)
+	 * Reasoning: No loops.
+	 * 
+	 * Space complexity: O(1)
+	 * Reasoning: Some extra variables.
+	 * 
+	 * 
+	 * 
 	 * Initialises the Cipher based on user input.
 	 */
 	private Cipher initCipher() {
@@ -297,7 +299,7 @@ public final class Menu {
 				out.printf("\nEnter key %d of %d (use \'^\' for the newline character):\n> ", (i + 1), numKeys);
 				inputKeys[i] = new StringBuilder(console.nextLine().replace('^', '\n'));
 			}
-			System.out.println();
+			out.println();
 			
 			// convert whatever the user entered into a derived usable Cipher key
 			key = new KeySanitiser(inputKeys).getSanitizedKey();

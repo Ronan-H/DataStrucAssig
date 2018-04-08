@@ -16,7 +16,9 @@ import java.net.URL;
  */
 public class CipherProcessor {
 	// number of bytes to be used in the byte buffer
-	private static final int BUFFER_LEN = 8192;
+	// MUST be an even number, should be a power of 2, bigger
+	// or equal to 8192
+	private static final int BUFFER_LEN = 65536;
 	// the input byte buffer
 	private byte[] buffer;
 	// the cipher object to use for encryption/decryption
@@ -28,15 +30,15 @@ public class CipherProcessor {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
+	 * Running time: O(n)
 	 * Reasoning: A complex method, but overall since each byte is read,
-	 * dealt with in O(1) time, then written, it runs in O(n) time.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
+	 * dealt with in O(1) time, then written, it runs in O(n) time.
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Since the file is encrypted "on the fly" and not held in memory
 	 * all at once, this method should use approximately the same amount of space
-	 * regardless of file size.<br>
-	 * <br>
+	 * regardless of file size.
+	 * 
 	 * @param resourcePath Path to the resource file/URL
 	 * @param encryptMode true for encrypt, false for decrypt
 	 * @param readFromURL true to read from URL, false to read from file
@@ -113,6 +115,7 @@ public class CipherProcessor {
 			out.close();
 		}
 		else {
+			// flush console output
 			out.flush();
 			System.out.print("\n\n");
 		}

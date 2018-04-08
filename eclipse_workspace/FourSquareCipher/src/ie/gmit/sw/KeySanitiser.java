@@ -1,4 +1,5 @@
 package ie.gmit.sw;
+
 import static ie.gmit.sw.Cipher.*;
 
 /**
@@ -18,29 +19,30 @@ public final class KeySanitiser {
 	
 	/**
 	 * First sanitises the input keys if they haven't been already,
-	 * then returns the "clean" key.<br>
-	 * <br>
+	 * then returns the "clean" key.
+	 * 
 	 * This works similar to the singleton design pattern.
 	 * @return A "clean" key, ready to be used in a four square cipher.
 	 */
 	public String getSanitizedKey() {
 		if (sanitizedKey == null) {
-			sanitizeKeys();
+			// keys not yet sanitised; sanitise them
+			sanitiseKeys();
 		}
 		
 		return sanitizedKey;
 	}
 	
 	/**
-	 * Sanitises the input keys in 4 distinct steps.<br>
-	 * <br>
+	 * Sanitises the input keys in 4 distinct steps.
+	 * 
 	 * The outputted key is guaranteed to be in the correct format to
 	 * be used in the four square cipher, regardless of what the input
-	 * key(s) are (for as much as I've tested it, anyway).<br>
+	 * key(s) are (for as much as I've tested it, anyway).
 	 */
-	private void sanitizeKeys() {
+	private void sanitiseKeys() {
 		// Step 1: Spill any additional chars from key 1 to key 2
-		equalizeKeys();
+		equaliseKeys();
 		
 		// Step 2: Remove any characters not in the cipher's alphabet
 		removeUnsupportedChars();
@@ -48,21 +50,21 @@ public final class KeySanitiser {
 		// Step 3: Remove duplicate characters
 		removeDuplicateChar();
 		
-		// Step 4: Append characters, if necessary, to get the right key length
+		// Step 4: Append characters, if necessary, to get the desired key length
 		addPadding();
 		
 		sanitizedKey = inputKeys[0].append(inputKeys[1]).toString();
 	}
 	
 	/**
-	 * Running time: O(n)?<br>
+	 * Running time: O(n)?
 	 * Reasoning: Depends on the running time of StringBuilder.append(), which
-	 * might be O(n), since it has n characters to append. Otherwise, O(1).<br>
-	 * <br>
-	 * Space complexity: 0<br>
+	 * might be O(n), since it has n characters to append. Otherwise, O(1).
+	 * 
+	 * Space complexity: 0
 	 * Reasoning: No extra variables.
 	 */
-	private void equalizeKeys() {
+	private void equaliseKeys() {
 		if (inputKeys[0].length() > ALPHABET_SIZE) {
 			// append any extra characters to the second key
 			inputKeys[1].append(inputKeys[0].substring(ALPHABET_SIZE));
@@ -72,12 +74,12 @@ public final class KeySanitiser {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
+	 * Running time: O(n)
 	 * Reasoning: Running time is proportional time to the size of the
-	 * input key.<br>
-	 * <br>
-	 * Space complexity: 0<br>
-	 * Reasoning: O(1)<br>
+	 * input key.
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */
@@ -102,12 +104,12 @@ public final class KeySanitiser {
 	}
 	
 	/**
-	 * Running time: O(n^2)<br>
+	 * Running time: O(n^2)
 	 * Reasoning: Compares every char in each key to every other
-	 * char, giving n^2.<br>
-	 * <br>
-	 * Space complexity: 0<br>
-	 * Reasoning: O(1)<br>
+	 * char, giving n^2.
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */
@@ -134,12 +136,12 @@ public final class KeySanitiser {
 	}
 	
 	/**
-	 * Running time: O(n^2)<br>
+	 * Running time: O(n^2)
 	 * Reasoning: Loops through the alphabet and searches the key
 	 * each time for that character, giving n^2.
-	 * <br>
-	 * Space complexity: 0<br>
-	 * Reasoning: O(1)<br>
+	 * 
+	 * Space complexity: 0
+	 * Reasoning: O(1)
 	 * Just a few extra variables whose size remains the same when the
 	 * input changes.
 	 */

@@ -10,7 +10,7 @@ import java.util.Random;
 /**
  * Everything to do with the cipher. Holds information about the alphabet
  * being used, the key, the lookup tables for encryption/decryption, etc.
- * <br><br>
+ * 
  * Also includes various methods including encrypting/decrypting batches of
  * characters at once.
  */
@@ -53,18 +53,18 @@ public final class Cipher {
 	// same as fourSq, but instead represented as java chars
 	private final char[][] sqChars;
 	
-	// the object used to process files/urls
+	// the object used to process files/URLs
 	private CipherProcessor cipherProcessor;
 	
 	/**
-	 * Running time: O(n)<br>
-	 * Reasoning: Runtime proportional to ALPHABET_SIZE.<br>
-	 * <br>
-	 * Space complexity: ~209 bytes<br>
-	 * Reasoning: 128 + 81 bytes; for the pack and unpack arrays.<br>
-	 * <br>
-	 * <br>
-	 * <br>
+	 * Running time: O(n)
+	 * Reasoning: Runtime proportional to ALPHABET_SIZE.
+	 * 
+	 * Space complexity: ~209 bytes
+	 * Reasoning: 128 + 81 bytes; for the pack and unpack arrays.
+	 * 
+	 * 
+	 * 
 	 * Initialises the lookup tables to convert a normal Java char to a "packed char",
 	 * and back again.
 	 */
@@ -101,12 +101,12 @@ public final class Cipher {
 	}
 	
 	/**
-	 * (Not including method calls for the Big O)<br>
-	 * <br>
-	 * Running time: O(1)<br>
-	 * Reasoning: Just initialising variables.<br>
-	 * <br>
-	 * Space complexity: O(n^2)<br>
+	 * (Not including method calls for the Big O)
+	 * 
+	 * Running time: O(1)
+	 * Reasoning: Just initialising variables.
+	 * 
+	 * Space complexity: O(n^2)
 	 * Reasoning: The lookup tables must hold every permutation of 2 characters
 	 * from the alphabet. This is n * n characters, or n^2.
 	 */
@@ -130,13 +130,13 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n^4)<br>
+	 * Running time: O(n^4)
 	 * Reasoning: At one point this method pairs every character in a 2d array
 	 * with every other character in that array, making it O(n^4) (where 'n' is
 	 * SQRT_ALPHABET_SIZE). You could also say it's every permutation of 4
-	 * characters, n*n*n*n = n^4.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
+	 * characters, n*n*n*n = n^4.
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Some extra variables.
 	 */
 	private void init(String key) {
@@ -239,11 +239,11 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
+	 * Running time: O(n)
 	 * Reasoning: Scales with ALPHABET_SIZE (for every character in the alphabet,
-	 * it needs to be added and later plucked out at random)<br>
-	 * <br>
-	 * Space complexity: O(n)<br>
+	 * it needs to be added and later plucked out at random)
+	 * 
+	 * Space complexity: O(n)
 	 * Reasoning: Same reasoning as above.
 	 */
 	public static String generateRandomKey() {
@@ -271,15 +271,15 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
+	 * Running time: O(n)
 	 * Reasoning: A single bigram is encrypted in O(1) time (ie. just bit shifts,
 	 * array accesses, if statements etc.) but since we're encrypting an array of n
-	 * bytes, the running time will scale O(n).<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
+	 * bytes, the running time will scale O(n).
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Conversions are done in place, so the only extra memory taken up
-	 * is for a few variables.<br>
-	 * <br>
+	 * is for a few variables.
+	 * 
 	 * @param buffer The array of bytes to encrypt
 	 * @param limit How much of the array to encrypt
 	 */
@@ -323,17 +323,17 @@ public final class Cipher {
 	}
 	
 	/**
-	 * <i>(same as above)</i><br>
-	 * <br>
-	 * Running time: O(n)<br>
+	 * (same as above)
+	 * 
+	 * Running time: O(n)
 	 * Reasoning: A single bigram is decrypted in O(1) time (ie. just bit shifts,
 	 * array accesses, if statements etc.) but since we're decrypting an array of n
-	 * bytes, the running time will scale O(n).<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
+	 * bytes, the running time will scale O(n).
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Conversions are done in place, so the only extra memory taken up
-	 * is for a few variables.<br>
-	 * <br>
+	 * is for a few variables.
+	 * 
 	 * @param buffer The array of bytes to encrypt
 	 * @param limit How much of the array to encrypt
 	 */
@@ -356,10 +356,10 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n)<br>
-	 * Reasoning: n characters to be printed.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
+	 * Running time: O(n)
+	 * Reasoning: n characters to be printed.
+	 * 
+	 * Space complexity: O(1)
 	 * Reasoning: Some extra variables.
 	 */
 	public void printKey() {
@@ -385,16 +385,16 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Running time: O(n^2), where 'n' is the length of the square<br>
+	 * Running time: O(n^2), where 'n' is the length of the square
 	 * Reasoning: Prints a square of chars, side size n. A squares area
-	 * obviously grows by it's length, squared.<br>
-	 * <br>
-	 * Space complexity: O(1)<br>
-	 * Reasoning: Some extra variables.<br>
-	 * <br>
-	 * <br>
-	 * <br>
-	 * Prints the 4 squares from the cipher in ASCII form.<br>
+	 * obviously grows by it's length, squared.
+	 * 
+	 * Space complexity: O(1)
+	 * Reasoning: Some extra variables.
+	 * 
+	 * 
+	 * 
+	 * Prints the 4 squares from the cipher in ASCII form.
 	 * Top left/bottom right squares are the alphabet, top right
 	 * and bottom left squares are the two key parts, as in the PDF.
 	 */
@@ -439,9 +439,13 @@ public final class Cipher {
 	}
 	
 	/**
-	 * Just calls another object's; see that method for Big O details.<br>
+	 * Just calls another object's; see that method for Big O details.
 	 */
-	public void processFile(String fileName, boolean encryptMode, boolean readFromURL, boolean writeToFile) throws IOException {
+	public void processFile(String fileName,
+			boolean encryptMode,
+			boolean readFromURL,
+			boolean writeToFile)
+				throws IOException {
 		cipherProcessor.processFile(fileName, encryptMode, readFromURL, writeToFile);
 	}
 	
