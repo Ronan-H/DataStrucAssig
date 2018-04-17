@@ -36,3 +36,6 @@
   * The four lookup tables together take up: (128 + 81 + (10321 * 2 * 2)) / 1024 = 40.52 kilobytes.
 
 **Note:** The large buffer size seems to cause only the end of large files to be printed to the console on Windows, but this doesn't seem to happen on Linux. The problem goes away when the buffer size is reduced down to 8192 bytes.
+
+## Running the application
+To run the applciation, execute the command **java -cp ./four-square.jar ie.gmit.sw.Runner** inside the export directory. Windows users can also just double click the *run_final.bat* file.
