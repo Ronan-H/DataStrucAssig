@@ -1,5 +1,5 @@
 
-# Ronan's Rapid Four Square Cipher Application
+# Rapid Four Square Cipher
 
 ### How encryption/decryption works:
 * Input is read in as a buffer of bytes
