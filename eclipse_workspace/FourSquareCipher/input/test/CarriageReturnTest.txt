@@ -1,8 +1,0 @@
-This
-File
-Has
-Carriage
-Returns
-Along
-With
-Newlines
