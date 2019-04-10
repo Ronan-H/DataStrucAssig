@@ -1,7 +1,10 @@
 
 # Rapid Four Square Cipher
 
-### How encryption/decryption works:
+### How the four square cipher works:
+Read about it [here](https://en.wikipedia.org/wiki/Four-square_cipher).
+
+### How my implementation works:
 * Input is read in as a buffer of bytes
 * Uses the idea of mapping bigrams to other bigrams (ie. "TH" -> "ES") directly instead of manipulating indexes in a 2D array; precomputation.
 * Lookup tables are generated when the cipher is initialised.
